@@ -1,6 +1,6 @@
 
 from metroloJ_QC.setup import MetroloJDialog, QC_Options
-from metroloJ_QC.stage import driftprofiler
+from metroloJ_QC.stage import driftProfiler
 from metroloJ_QC.importer import simpleMetaData;
 from metroloJ_QC.report import driftProfilerReport
 from java.lang import Double
@@ -19,18 +19,19 @@ Opts = QC_Options()
 Dialog = MetroloJDialog("Stage positioning and drift report generator", Opts)
 
 ##Don't know which parts of this are important
-##Dialog.beadDetectionThreshold = "Otsu"
-Dialog.centerDetectionMethodIndex = 2
+Dialog.beadDetectionThreshold = "Otsu"
+Dialog.centerDetectionMethodIndex = 1
 
 Dialog.savePdf = True
 Dialog.saveSpreadsheet = True
 Dialog.saveImages = True
+##Dialog.useBeads = False
 
 coords = [Double.NaN, Double.NaN]
 creationInfo=simpleMetaData.getOMECreationInfos(imp, Dialog.debugMode)
 
 print("Running Profiler")
-profiler = driftprofiler(imp, Dialog, title, coords, creationInfo)
+profiler = driftProfiler(imp, Dialog, title, coords, creationInfo)
 print("Profiler executed")
 
 
