@@ -78,3 +78,4 @@ def execute_MetroloJ_process(Dialog, report_dir, report_name):
 		raise ValueError("Report types supported are PSF profiler, stage positioning and drift and co-registration")
 	
 	report_instance.saveReport(report_dir, report_name, None)
+	return execution_instance
