@@ -95,3 +95,7 @@ class ImageObject:
 		image_plus.setCalibration(CalibrationObj)
 		self.image_plus = image_plus
 		return image_plus
+	
+	def attach_annotation(self, conn, annotation_path, mimetype, ns, desc=""):
+		new_ann = conn.createFileAnnfromLocalFile(annotation_path, mimetype=mimetype, ns=ns, desc=desc)
+		self.image.linkAnnotation(new_ann)
