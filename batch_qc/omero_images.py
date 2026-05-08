@@ -7,28 +7,29 @@ import batch_qc
 import omero
 from omero import gateway
 
-def connect(hostname, username, password, keep_alive=60):
+def connect(hostname, username, password, *, keep_alive=None, secure=None, port=None):
 	"""
 	Connect to an OMERO server
 	:param hostname: Host name
 	:param username: User
 	:param password: Password
+	:param keep_alive: Keep-alive interval in seconds (None/0 disables)
+	:param secure: Whether to use secure connection; None uses BlitzGateway default
+	:param port: OMERO server port; None uses BlitzGateway default
 	:return: Connected BlitzGateway
 	"""
-	conn = gateway.BlitzGateway(username, password,
-						host=hostname, secure=True, port=4063)
+	gateway_kwargs = {"host": hostname}
+	if secure is not None:
+		gateway_kwargs["secure"] = secure
+	if port is not None:
+		gateway_kwargs["port"] = int(port)
+
+	conn = gateway.BlitzGateway(username, password, **gateway_kwargs)
 	conn.connect()
-	conn.c.enableKeepAlive(keep_alive)
+	if keep_alive:
+		conn.c.enableKeepAlive(int(keep_alive))
 	print (f"Connected to OMERO server at {hostname} as user {username}")
 	return conn
-
-
-def disconnect(conn):
-	"""
-	Disconnect from an OMERO server
-	:param conn: The BlitzGateway
-	"""
-	conn.close()
 
 def download_annotation_file(annotation_file, output_directory):
 	with open(os.path.join(output_directory, annotation_file.getName()), "wb") as f:
