@@ -7,6 +7,8 @@ def initialize_MetroloJDialog(method,
 							  save_pdf=False,
 							  save_csv=False,
 							  save_images=False):
+	if batch_qc._ij is None:
+		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	if method == "psf":
 		method_string = "PSF profiler report generator"
 	elif method == "drift":
@@ -47,7 +49,8 @@ def initialize_MetroloJDialog(method,
 	return Dialog
 
 def execute_MetroloJ_process(Dialog, report_dir, report_name):
-	
+	if batch_qc._ij is None:
+		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	image = Dialog.ip
 	image_title = image.getTitle()
 	creationInfo = batch_qc._java["simpleMetaData"].getOMECreationInfos(image, Dialog.debugMode)

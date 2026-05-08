@@ -109,6 +109,8 @@ class ImageObject(OmeroObject):
 		self.shape = self.image_data.shape
 	
 	def generate_ImagePlus(self):
+		if batch_qc._ij is None:
+			raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 		if self.image_data is None:
 			self.load_image_data()
 		image_plus = batch_qc._ij.py.to_imageplus(self.image_data)

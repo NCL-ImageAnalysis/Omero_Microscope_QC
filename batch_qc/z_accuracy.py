@@ -157,6 +157,8 @@ def selectWindow(Pattern):
 
 def run_z_accuracy(input_image,
 		output_directory):
+	if batch_qc._ij is None:
+		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	# This section sets the measurements that will be used
 	AnalyzerClass = batch_qc._java["Analyzer"]()
 	# Gets original measurements to reset later
