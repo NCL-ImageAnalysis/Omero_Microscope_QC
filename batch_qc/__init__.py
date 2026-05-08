@@ -1,6 +1,6 @@
-from metroloJ_access import *
-from omero_images import *
-from z_accuracy import *
+from .metroloJ_access import *
+from .omero_images import *	
+from .z_accuracy import *
 
 import imagej
 import scyjava
