@@ -33,22 +33,32 @@ def download_annotation_file(annotation_file, output_directory):
 		for chunk in annotation_file.getFileInChunks():
 			f.write(chunk)
 
-class ChannelObject:
-	def __init__(self, channel):
-		self.channel = channel
-		self.name = channel.getName()
-		self.emission_wave = channel.getEmissionWave()
-		self.excitation_wave = channel.getExcitationWave()
-		try:
-			self.mode = channel.getLogicalChannel().getMode().value
-		except AttributeError:
-			self.mode = None
-    
-class ImageObject:
+class OmeroObject:
+	def __init__(self, omero_entity):
+		self.core = omero_entity
+		self.name = omero_entity.getName()
+		self.id = omero_entity.getId()
+
+	def attach_annotation(self, conn, annotation_path, mimetype, ns, desc=""):
+		new_ann = conn.createFileAnnfromLocalFile(annotation_path, mimetype=mimetype, ns=ns, desc=desc)
+		self.core.linkAnnotation(new_ann)
+
+class ProjectObject(OmeroObject):
+	def __init__(self, project):
+		super().__init__(project)
+		self.project = project
+		self.datasets = [DatasetObject(ds, parent_project=self) for ds in project.listChildren()]
+
+class DatasetObject(OmeroObject):
+	def __init__(self, dataset, parent_project=None):
+		super().__init__(dataset)
+		self.project = parent_project
+		self.dataset = dataset
+		self.images = [ImageObject(img) for img in dataset.listChildren()]
+
+class ImageObject(OmeroObject):
 	def __init__(self, image, load_data=False):
-		self.image = image
-		self.id = image.getId()
-		self.name = image.getName()
+		super().__init__(image)
 		self.size_x = image.getSizeX()
 		self.size_y = image.getSizeY()
 		self.size_z = image.getSizeZ()
@@ -86,11 +96,10 @@ class ImageObject:
 		self.image_data = xarray.DataArray(self.image_data, dims=["t", "ch", "pln", "row", "col"], name=self.name)
 		self.shape = self.image_data.shape
 	
-	def generate_ImagePlus(self, ij_instance):
+	def generate_ImagePlus(self):
 		if self.image_data is None:
 			self.load_image_data()
-		image_plus = ij_instance.py.to_imageplus(self.image_data)
-		Calibration = scyjava.jimport("ij.measure.Calibration")
+		image_plus = ij.py.to_imageplus(self.image_data)
 		CalibrationObj = Calibration()
 		CalibrationObj.setXUnit(str(self.scale_x.getUnit()))
 		CalibrationObj.setYUnit(str(self.scale_y.getUnit()))
@@ -102,6 +111,14 @@ class ImageObject:
 		self.image_plus = image_plus
 		return image_plus
 	
-	def attach_annotation(self, conn, annotation_path, mimetype, ns, desc=""):
-		new_ann = conn.createFileAnnfromLocalFile(annotation_path, mimetype=mimetype, ns=ns, desc=desc)
-		self.image.linkAnnotation(new_ann)
+class ChannelObject(OmeroObject):
+	def __init__(self, channel):
+		super().__init__(channel)
+		self.emission_wave = channel.getEmissionWave()
+		self.excitation_wave = channel.getExcitationWave()
+		try:
+			self.mode = channel.getLogicalChannel().getMode().value
+		except AttributeError:
+			self.mode = None
+	def attach_annotation(*args, **kwargs):
+		raise NotImplementedError("Attaching annotations to channels is not supported")
