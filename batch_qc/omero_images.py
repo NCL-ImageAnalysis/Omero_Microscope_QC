@@ -4,7 +4,7 @@ import xarray
 import itertools
 import scyjava
 
-from omero import gateway
+import omero
 
 def connect(hostname, username, password):
     """
@@ -14,7 +14,7 @@ def connect(hostname, username, password):
     :param password: Password
     :return: Connected BlitzGateway
     """
-    conn = gateway.BlitzGateway(username, password,
+    conn = omero.gateway.BlitzGateway(username, password,
                         host=hostname, secure=True, port=4063)
     conn.connect()
     conn.c.enableKeepAlive(60)
@@ -38,10 +38,20 @@ class OmeroObject:
 		self.core = omero_entity
 		self.name = omero_entity.getName()
 		self.id = omero_entity.getId()
+		self.update_annotations()
 
 	def attach_annotation(self, conn, annotation_path, mimetype, ns, desc=""):
 		new_ann = conn.createFileAnnfromLocalFile(annotation_path, mimetype=mimetype, ns=ns, desc=desc)
 		self.core.linkAnnotation(new_ann)
+		self.update_annotations()
+
+	def update_annotations(self):
+		self.annotations = [ann for ann in self.core.listAnnotations()]
+		self.file_annotations = [ann for ann in self.annotations if ann.OMERO_TYPE == omero.model.FileAnnotationI]
+		self.key_value_pairs = None
+		for ann in self.annotations:
+			if ann.OMERO_TYPE == omero.model.MapAnnotationI:
+				self.key_value_pairs = dict(ann.getValue())
 
 class ProjectObject(OmeroObject):
 	def __init__(self, project):
