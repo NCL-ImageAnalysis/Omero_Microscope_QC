@@ -5,8 +5,9 @@ import itertools
 import batch_qc
 
 import omero
+from omero import gateway
 
-def connect(hostname, username, password):
+def connect(hostname, username, password, keep_alive=60):
     """
     Connect to an OMERO server
     :param hostname: Host name
@@ -14,10 +15,10 @@ def connect(hostname, username, password):
     :param password: Password
     :return: Connected BlitzGateway
     """
-    conn = omero.gateway.BlitzGateway(username, password,
+    conn = gateway.BlitzGateway(username, password,
                         host=hostname, secure=True, port=4063)
     conn.connect()
-    conn.c.enableKeepAlive(60)
+    conn.c.enableKeepAlive(keep_alive)
     return conn
 
 
