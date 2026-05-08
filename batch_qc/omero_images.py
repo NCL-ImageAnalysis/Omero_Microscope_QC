@@ -33,7 +33,10 @@ class ChannelObject:
 		self.name = channel.getName()
 		self.emission_wave = channel.getEmissionWave()
 		self.excitation_wave = channel.getExcitationWave()
-		self.mode = channel.getLogicalChannel().getMode().value
+		try:
+			self.mode = channel.getLogicalChannel().getMode().value
+		except AttributeError:
+			self.mode = None
     
 class ImageObject:
 	def __init__(self, image, load_data=False):
