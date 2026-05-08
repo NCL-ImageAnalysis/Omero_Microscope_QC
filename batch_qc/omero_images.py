@@ -43,7 +43,19 @@ class OmeroObject:
 		self.id = omero_entity.getId()
 		self.update_annotations()
 
-	def attach_annotation(self, conn, annotation_path, mimetype, ns, desc=""):
+	def attach_annotation(self, conn, annotation_path, ns, mimetype=None, desc=""):
+		if mimetype is None:
+			extension = os.path.splitext(annotation_path)[1].lower()
+			if extension in [".txt"]:
+				mimetype = "text/plain"
+			elif extension in [".pdf"]:
+				mimetype = "application/pdf"
+			elif extension in [".png", ".jpg", ".jpeg"]:
+				mimetype = "image/" + extension[1:]
+			elif extension in [".csv"]:
+				mimetype = "text/csv"
+			elif extension in [".xls", ".xlsx"]:
+				mimetype = "application/vnd.ms-excel"
 		new_ann = conn.createFileAnnfromLocalFile(annotation_path, mimetype=mimetype, ns=ns, desc=desc)
 		self.core.linkAnnotation(new_ann)
 		self.update_annotations()
