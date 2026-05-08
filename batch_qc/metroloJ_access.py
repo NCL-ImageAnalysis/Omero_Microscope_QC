@@ -11,10 +11,13 @@ def initialize_MetroloJDialog(method,
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	if method == "psf":
 		method_string = "PSF profiler report generator"
+		title_string = "PSF-profile"
 	elif method == "drift":
 		method_string = "Stage positioning and drift report generator"
+		title_string = "Drift-profile"
 	elif method == "registration":
 		method_string = "Co-registration report generator"
+		title_string = "Registration-profile"
 	else:
 		raise ValueError("Method must be one of 'psf', 'drift' or 'registration'")
 
@@ -34,6 +37,7 @@ def initialize_MetroloJDialog(method,
 
 	batch_qc._java["WindowManager"].setTempCurrentImage(image_plus)
 	Dialog = batch_qc._java["MetroloJDialog"](method_string, batch_qc._java["QC_Options"]())
+	Dialog.title = title_string
 	Dialog.beadDetectionThreshold = thresholding_method
 	Dialog.centerDetectionMethodIndex = center_integer
 
