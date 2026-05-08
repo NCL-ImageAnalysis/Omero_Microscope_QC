@@ -2,7 +2,7 @@ import os
 import numpy as np
 import xarray
 import itertools
-import scyjava
+import batch_qc
 
 import omero
 
@@ -109,8 +109,8 @@ class ImageObject(OmeroObject):
 	def generate_ImagePlus(self):
 		if self.image_data is None:
 			self.load_image_data()
-		image_plus = ij.py.to_imageplus(self.image_data)
-		CalibrationObj = Calibration()
+		image_plus = batch_qc._ij.py.to_imageplus(self.image_data)
+		CalibrationObj = batch_qc._java["Calibration"]()
 		CalibrationObj.setXUnit(str(self.scale_x.getUnit()))
 		CalibrationObj.setYUnit(str(self.scale_y.getUnit()))
 		CalibrationObj.setZUnit(str(self.scale_z.getUnit()))

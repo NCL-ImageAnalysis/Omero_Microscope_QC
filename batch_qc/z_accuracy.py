@@ -1,7 +1,7 @@
 # Python modules
 import copy, re, os
 from collections import Counter
-import scyjava
+import batch_qc
 
 def analyzeParticles(
 		Binary_Image, 
@@ -28,13 +28,13 @@ def analyzeParticles(
 	)
 	# Runs the analyze particles command to get ROI. 
 	# Done by adding to the overlay in order to not have ROIManger shown to user
-	IJ.run(Binary_Image, "Analyze Particles...", AnalyzeParticlesSettings)
+	batch_qc._java["IJ"].run(Binary_Image, "Analyze Particles...", AnalyzeParticlesSettings)
 	# Gets the Overlayed ROIs from analyze particles
 	Overlayed_Rois = Binary_Image.getOverlay()
 	# Takes the overlay and turns it into an array of ROI
 	RoiList = Overlayed_Rois.toArray()
 	# Removes this overlay to clean up the image
-	IJ.run(Binary_Image, "Remove Overlay", "")
+	batch_qc._java["IJ"].run(Binary_Image, "Remove Overlay", "")
 	return RoiList
 
 
@@ -51,10 +51,10 @@ def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
 	"""	
 	
 	# Initialises a new empty results table
-	RTable = ResultsTable()
+	RTable = batch_qc._java["ResultsTable"]()
 	# Initialises an Analyzer object using 
 	# the image and the empty results table
-	An = Analyzer(Image, RTable)
+	An = batch_qc._java["Analyzer"](Image, RTable)
 	# Selects the roi on the image
 	Image.setRoi(SampleRoi)
 	# Takes the measurements
@@ -85,7 +85,7 @@ def distanceBetweenPoints(X1, Y1, X2, Y2):
 	"""	
 	xdiff = X1 - X2
 	ydiff = Y1 - Y2
-	Distance = Math.sqrt((xdiff*xdiff) + (ydiff*ydiff))
+	Distance = batch_qc._java["Math"].sqrt((xdiff*xdiff) + (ydiff*ydiff))
 	return Distance
 
 
@@ -120,7 +120,7 @@ def roundToBase(Number, Base):
 	Returns:
 		int: Rounded number
 	"""	
-	RoundedNumber = (Base * Math.round(Number/Base))
+	RoundedNumber = (Base * batch_qc._java["Math"].round(Number/Base))
 	return RoundedNumber
 
 
@@ -134,7 +134,7 @@ def getAngleBetweenPoints(Point1, Point2):
 	Returns:
 		float: Angle between two points in degrees
 	"""	
-	Angle = Math.toDegrees(Math.atan2(Point2[1] - Point1[1], Point2[0] - Point1[0]))
+	Angle = batch_qc._java["Math"].toDegrees(batch_qc._java["Math"].atan2(Point2[1] - Point1[1], Point2[0] - Point1[0]))
 	return Angle
 
 
@@ -147,42 +147,25 @@ def selectWindow(Pattern):
 	Returns:
 		boolean: Whether the given window was found and selected
 	"""	
-	TitleList = WindowManager.getImageTitles()
+	TitleList = batch_qc._java["WindowManager"].getImageTitles()
 	for Title in TitleList:
 		Title = str(Title)
 		if re.match(Pattern, Title):
-			IJ.selectWindow(Title)
+			batch_qc._java["IJ"].selectWindow(Title)
 			return True
 	return False
 
 def run_z_accuracy(input_image,
 		output_directory):
-	
-	## Java Imports - Being run here so only called after fiji instance initialised--------------------------------v
-	global Math, IJ, WindowManager, FileSaver, Line, Overlay, Roi, Measurements, ResultsTable, ZProjector, Analyzer
-
-	Math = scyjava.jimport("java.lang.Math")
-	IJ = scyjava.jimport("ij.IJ")
-	WindowManager = scyjava.jimport("ij.WindowManager")
-	FileSaver = scyjava.jimport("ij.io.FileSaver")
-	Line = scyjava.jimport("ij.gui.Line")
-	Overlay = scyjava.jimport("ij.gui.Overlay")
-	Roi = scyjava.jimport("ij.gui.Roi")
-	Measurements = scyjava.jimport("ij.measure.Measurements")
-	ResultsTable = scyjava.jimport("ij.measure.ResultsTable")
-	ZProjector = scyjava.jimport("ij.plugin.ZProjector")
-	Analyzer = scyjava.jimport("ij.plugin.filter.Analyzer")
-	#--------------------------------------------------------------------------------------------------------------^
-	
 	# This section sets the measurements that will be used
-	AnalyzerClass = Analyzer()
+	AnalyzerClass = batch_qc._java["Analyzer"]()
 	# Gets original measurements to reset later
 	OriginalMeasurements = AnalyzerClass.getMeasurements()
 
 	# Sets the measurements to be used
 	AnalyzerClass.setMeasurements(
-		Measurements.SHAPE_DESCRIPTORS 
-		+ Measurements.CENTROID
+		batch_qc._java["Measurements"].SHAPE_DESCRIPTORS 
+		+ batch_qc._java["Measurements"].CENTROID
 	)
 
 	image_plus = input_image.generate_ImagePlus()
@@ -197,12 +180,12 @@ def run_z_accuracy(input_image,
 	ZDepth = Calibration.pixelDepth
 
 	# Max intensity of the image to get all of the ladder
-	Projected = ZProjector.run(image_plus, "max")
+	Projected = batch_qc._java["ZProjector"].run(image_plus, "max")
 	# Removes the scale so ROI coordinates are correct
 	Projected.removeScale()
 	# Thresholds the image to get the ladder
-	IJ.setAutoThreshold(Projected, "Default dark")
-	IJ.run(Projected, "Convert to Mask", "")
+	batch_qc._java["IJ"].setAutoThreshold(Projected, "Default dark")
+	batch_qc._java["IJ"].run(Projected, "Convert to Mask", "")
 	# Runs analyze particles to get a list of ROIs
 	RoiList = analyzeParticles(Projected, "10-Infinity", "0.00-1.00")
 
@@ -276,18 +259,18 @@ def run_z_accuracy(input_image,
 			# If the angle is the same as the mode angle and the distance is greater than the current max
 			# Then these are the new furthest apart points
 			if RoundedLadderAngle == ModeAngle and LadderDistance > MaxLadderDistance:
-				FeducialLine = Line(FirstPoint[0], FirstPoint[1], SecondPoint[0], SecondPoint[1])
+				FeducialLine = batch_qc._java["Line"](FirstPoint[0], FirstPoint[1], SecondPoint[0], SecondPoint[1])
 				# This angle is not rounded as it is used to rotate the image
 				FeducialAngle = LadderAngle
 				MaxLadderDistance = LadderDistance
 	#-----------------------------------------------------------------------------------------------------------^
 
 	# Need to use an overlay so it will rotate with the image
-	LineOverlay = Overlay(FeducialLine)
+	LineOverlay = batch_qc._java["Overlay"](FeducialLine)
 	image_plus.setOverlay(LineOverlay)
 	
 	# Rotates the image so the ladder is horizontal
-	IJ.run(image_plus, "Arbitrarily...", "angle=" + str(-FeducialAngle) + " interpolate stack")
+	batch_qc._java["IJ"].run(image_plus, "Arbitrarily...", "angle=" + str(-FeducialAngle) + " interpolate stack")
 	# Gets the Rotated Roi from the overlay
 	RotatedLineOverlay = image_plus.getOverlay()
 	RotatedLineRoi = RotatedLineOverlay.get(0)
@@ -301,7 +284,7 @@ def run_z_accuracy(input_image,
 	# Gets the width of the image
 	Width = image_plus.getWidth()
 	# Creates a box roi that is 1 pixel high and the width of the image centred on the line centroid
-	BoxRoi = Roi(0, LineCentroid[1], Width, 1)
+	BoxRoi = batch_qc._java["Roi"](0, LineCentroid[1], Width, 1)
 
 	# Crops the image to the single line
 	image_plus.setRoi(BoxRoi)
@@ -310,38 +293,38 @@ def run_z_accuracy(input_image,
 	image_plus.close()
 
 	# Runs the reslice command to get the XZ image similar to orthagonal view
-	IJ.run(LineImage, "Reslice [/]...", "output=" + str(ZDepth) +" start=Top avoid")
+	batch_qc._java["IJ"].run(LineImage, "Reslice [/]...", "output=" + str(ZDepth) +" start=Top avoid")
 
 	# Gets the resliced image
-	selectWindow("Reslice ")
-	OriginalSlicedImp = IJ.getImage()
+	batch_qc._java["IJ"].selectWindow("Reslice ")
+	OriginalSlicedImp = batch_qc._java["IJ"].getImage()
 	# Duplicates the image to only get one slice
 	SlicedImp = OriginalSlicedImp.crop()
 	# Close the original image to save memory
 	OriginalSlicedImp.close()
 
 	# Performs gaussian blur to smooth the image
-	IJ.run(SlicedImp, "Gaussian Blur...", "sigma=6")
+	batch_qc._java["IJ"].run(SlicedImp, "Gaussian Blur...", "sigma=6")
 	# Gets the statistics which includes the minimum and maximum intensity of the image
 	ImpStats = SlicedImp.getStatistics()
 	# Sets the prominence for the find maxima command to be half the difference between the min and max intensity
 	Prominence = str((ImpStats.max - ImpStats.min)/2)
 	# Finds the maxima in the image and outputs to a results table
-	IJ.run(SlicedImp, "Find Maxima...", "prominence=" + Prominence + " output=List")
+	batch_qc._java["IJ"].run(SlicedImp, "Find Maxima...", "prominence=" + Prominence + " output=List")
 
 	# Resets the contrast for easier viewing
 	SlicedImp.resetDisplayRange()
 	# Saves the XZ image and closes to save memory
-	FileSaver(SlicedImp).saveAsTiff(os.path.join(OutputPath, FileNameNoExtension + "_XZ.tif"))
+	batch_qc._java["FileSaver"](SlicedImp).saveAsTiff(os.path.join(OutputPath, FileNameNoExtension + "_XZ.tif"))
 	SlicedImp.close()
 
 	# Gets the results table and copies it so the displayed one can be closed
-	Results = ResultsTable().getResultsTable()
+	Results = batch_qc._java["ResultsTable"]().getResultsTable()
 	MaximaResults = Results.clone()
 	# Needs to reset the table to avoid dialog asking to save
 	Results.reset()
 	# Closes the results table
-	WindowManager.getWindow("Results").close()
+	batch_qc._java["WindowManager"].getWindow("Results").close()
 
 	# Calculates the axial step size for each maxima
 	for Row in range(0, MaximaResults.size()):

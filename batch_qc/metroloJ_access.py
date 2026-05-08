@@ -1,4 +1,4 @@
-import scyjava
+import batch_qc
 
 def initialize_MetroloJDialog(method,
 							  image,
@@ -30,12 +30,8 @@ def initialize_MetroloJDialog(method,
 	
 	image_plus = image.generate_ImagePlus()
 
-	WindowManager = scyjava.jimport("ij.WindowManager")
-	MetroloJDialog = scyjava.jimport("metroloJ_QC.setup.MetroloJDialog")
-	QC_Options = scyjava.jimport("metroloJ_QC.setup.QC_Options")
-
-	WindowManager.setTempCurrentImage(image_plus)
-	Dialog = MetroloJDialog(method_string, QC_Options())
+	batch_qc._java["WindowManager"].setTempCurrentImage(image_plus)
+	Dialog = batch_qc._java["MetroloJDialog"](method_string, batch_qc._java["QC_Options"]())
 	Dialog.beadDetectionThreshold = thresholding_method
 	Dialog.centerDetectionMethodIndex = center_integer
 
@@ -51,29 +47,21 @@ def initialize_MetroloJDialog(method,
 	return Dialog
 
 def execute_MetroloJ_process(Dialog, report_dir, report_name):
-	simpleMetaData = scyjava.jimport("metroloJ_QC.importer.simpleMetaData")
-	Double = scyjava.jimport("java.lang.Double")
 	
 	image = Dialog.ip
 	image_title = image.getTitle()
-	creationInfo = simpleMetaData.getOMECreationInfos(image, Dialog.debugMode)
-	coords = [Double.NaN, Double.NaN]
+	creationInfo = batch_qc._java["simpleMetaData"].getOMECreationInfos(image, Dialog.debugMode)
+	coords = [batch_qc._java["Double"].NaN, batch_qc._java["Double"].NaN]
 	
 	if Dialog.reportType == "pp":
-		PSFprofiler = scyjava.jimport("metroloJ_QC.resolution.PSFprofiler")
-		PSFprofilerReport = scyjava.jimport("metroloJ_QC.report.PSFprofilerReport")
-		execution_instance = PSFprofiler(image, Dialog, image_title, coords, creationInfo)
-		report_instance = PSFprofilerReport(image, Dialog, image_title, coords, creationInfo)
+		execution_instance = batch_qc._java["PSFprofiler"](image, Dialog, image_title, coords, creationInfo)
+		report_instance = batch_qc._java["PSFprofilerReport"](image, Dialog, image_title, coords, creationInfo)
 	elif Dialog.reportType == "pos":
-		driftProfiler = scyjava.jimport("metroloJ_QC.stage.driftProfiler")
-		driftProfilerReport = scyjava.jimport("metroloJ_QC.report.driftProfilerReport")
-		execution_instance = driftProfiler(image, Dialog, image_title, coords, creationInfo)
-		report_instance = driftProfilerReport(image, Dialog, image_title, coords, creationInfo)
+		execution_instance = batch_qc._java["driftProfiler"](image, Dialog, image_title, coords, creationInfo)
+		report_instance = batch_qc._java["driftProfilerReport"](image, Dialog, image_title, coords, creationInfo)
 	elif Dialog.reportType == "coa":
-		coAlignement = scyjava.jimport("metroloJ_QC.coalignement.coAlignement")
-		coAlignementReport = scyjava.jimport("metroloJ_QC.report.coAlignementReport")
-		execution_instance = coAlignement(image, Dialog, image_title, coords, creationInfo)
-		report_instance = coAlignementReport(image, Dialog, image_title, coords, creationInfo)
+		execution_instance = batch_qc._java["coAlignement"](image, Dialog, image_title, coords, creationInfo)
+		report_instance = batch_qc._java["coAlignementReport"](image, Dialog, image_title, coords, creationInfo)
 	else:
 		raise ValueError("Report types supported are PSF profiler, stage positioning and drift and co-registration")
 	
