@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import xarray
 import itertools
@@ -26,6 +27,11 @@ def disconnect(conn):
     :param conn: The BlitzGateway
     """
     conn.close()
+
+def download_annotation_file(annotation_file, output_directory):
+	with open(os.path.join(output_directory, annotation_file.getName()), "wb") as f:
+		for chunk in annotation_file.getFileInChunks():
+			f.write(chunk)
 
 class ChannelObject:
 	def __init__(self, channel):
