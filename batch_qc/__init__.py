@@ -2,6 +2,7 @@ from metroloJ_access import *
 from omero_images import *
 from z_accuracy import *
 
+import imagej
 import scyjava
 
 _ij = None
@@ -32,8 +33,8 @@ _JAVA_CLASSES = {
 	"Analyzer": "ij.plugin.filter.Analyzer"
 }
 
-def initialise(ij_instance):
+def initialise(*args, **kwargs):
 	global _ij, _java
 
-	_ij = ij_instance
+	_ij = imagej.init(*args, **kwargs)
 	_java = {name: scyjava.jimport(class_path) for name, class_path in _JAVA_CLASSES.items()}
