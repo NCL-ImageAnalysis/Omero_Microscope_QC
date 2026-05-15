@@ -50,6 +50,29 @@ def initialize_MetroloJDialog(method,
 	Dialog.emWavelengths = [ch.emission_wave for ch in image.channels]
 	Dialog.exWavelengths = [ch.excitation_wave for ch in image.channels]
 
+	try:
+		microscope_type = image.key_value_pairs["microscope_type"]
+		if microscope_type == "WideField":
+			Dialog.microType = 0
+		elif microscope_type == "CLSM":
+			Dialog.microType = 1
+		elif microscope_type == "Spinning Disc Confocal":
+			Dialog.microType = 2
+		elif microscope_type == "Multiphoton":
+			Dialog.microType = 3
+		else:
+			raise ValueError("Microscope type must be one of 'WideField', 'CLSM', 'Spinning Disc Confocal' or 'Multiphoton'")
+	except KeyError:
+		raise KeyError("Microscope type not found in image key value pairs. Please ensure that the image has a key 'microscope_type' with value 'WideField', 'CLSM', 'Spinning Disc Confocal' or 'Multiphoton'")
+	
+	if microscope_type == "CLSM":
+		try:
+			Dialog.pinhole = float(image.key_value_pairs["pinhole_size_AU"])
+		except KeyError:
+			raise KeyError("Pinhole size not found in image key value pairs. Please ensure that the image has a key 'pinhole_size_AU' with the pinhole size in AU as the value.")
+
+
+
 	return Dialog
 
 def execute_MetroloJ_process(Dialog, report_dir, report_name):
