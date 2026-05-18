@@ -1,5 +1,6 @@
 {
 	"hostname": "Input Hostname of OMERO Server",
 	"username": "Input Username",
-	"password": "Input Password"
+	"password": "Input Password",
+	"fiji_path": "path to fiji with metroloJ installed"
 }
