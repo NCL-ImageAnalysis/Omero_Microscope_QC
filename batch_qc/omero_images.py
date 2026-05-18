@@ -165,5 +165,5 @@ class ChannelObject(OmeroObject):
 			self.mode = channel.getLogicalChannel().getMode().value
 		except AttributeError:
 			self.mode = None
-	def attach_annotation(*args, **kwargs):
+	def attach_annotation(self, *args, **kwargs):
 		raise NotImplementedError("Attaching annotations to channels is not supported")
