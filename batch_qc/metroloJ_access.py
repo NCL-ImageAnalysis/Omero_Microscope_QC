@@ -24,7 +24,10 @@ def check_inputs(key, value):
 def initialize_MetroloJDialog(method,
 							  image,
 							  thresholding_method="Otsu",
-							  center_dectection_method="centroid"):
+							  center_dectection_method="centroid",
+							  save_pdf=True,
+							  save_csv=True,
+							  save_images=True):
 	if batch_qc._ij is None:
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	
@@ -61,6 +64,10 @@ def initialize_MetroloJDialog(method,
 	Dialog.refractiveIndex = image.refractive_index
 	Dialog.emWavelengths = [ch.emission_wave for ch in image.channels]
 	Dialog.exWavelengths = [ch.excitation_wave for ch in image.channels]
+
+	Dialog.savePdf = save_pdf
+	Dialog.saveSpreadsheet = save_csv
+	Dialog.saveImages = save_images
 
 	class_fields = [class_obj.getName() for class_obj in Dialog.getClass().getFields()]
 	for dict_key in image.key_value_pairs:
