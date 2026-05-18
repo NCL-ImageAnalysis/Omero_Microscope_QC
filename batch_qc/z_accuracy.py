@@ -174,7 +174,7 @@ def run_z_accuracy(input_image,
 
 	# Gets the needed paths and filenames for input and output
 	FileName = input_image.name
-	FileNameNoExtension = ".".join(FileName.split("."))[:-1]
+	FileNameNoExtension = ".".join(FileName.split(".")[:-1])
 	OutputPath = output_directory
 	#------------------------------------------------------^
 
