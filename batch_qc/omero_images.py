@@ -28,6 +28,11 @@ def connect(hostname, username, password, *, keep_alive=None, secure=None, port=
 	conn.connect()
 	if keep_alive:
 		conn.c.enableKeepAlive(int(keep_alive))
+	try:
+		conn.getSession()
+	except omero.ClientError:
+		conn.close()
+		raise ConnectionError("Failed to connect to OMERO server. Please check your credentials and connection details.")
 	print (f"Connected to OMERO server at {hostname} as user {username}")
 	return conn
 
