@@ -1,12 +1,46 @@
 import batch_qc
 
+_METROLOJ_DEFAULTS = {
+	
+}
+
+
+
+_ACCEPTED_VALUES = {
+	"method": ["psf", "drift", "registration"],
+	"thresholding_method": ["Legacy", "Li", "Minimum", "Otsu"],
+	"center_dectection_method": ["ellipses", "centroid", "max"],
+	"microscope_type": ["WideField", "CLSM", "Spinning Disc Confocal", "Multiphoton"],
+	"pinhole_size_AU": float,
+	"save_pdf": bool,
+	"save_csv": bool,
+	"save_images": bool,
+	"multiple_beads": bool,
+	"bead_channel": int,
+	"bead_size_um": float,
+	"crop_factor": float,
+	"min_distance_to_top_and_bottom_um": float,
+	"reject_doublets": bool,
+	"bead_prominence": float,
+	"inner_annulus_edge_distance_to_bead_um": float,
+	"annulus_thickness_um": float,
+	"apply_tolerance": bool,
+	"coal_ratio_tolerance": float,
+	"XY_ratio_tolerance": float,
+	"Z_ratio_tolerance": float,
+	"uniformity_tolerance": float,
+	"cent_acc_tolerance": float,
+	"max_gap_length": int,
+	"use_resolution_thresholds": bool,
+
+
+
+}
+
 def initialize_MetroloJDialog(method,
 							  image,
 							  thresholding_method="Otsu",
-							  center_dectection_method="centroid",
-							  save_pdf=False,
-							  save_csv=False,
-							  save_images=False):
+							  center_dectection_method="centroid"):
 	if batch_qc._ij is None:
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	if method == "psf":
@@ -70,8 +104,6 @@ def initialize_MetroloJDialog(method,
 			Dialog.pinhole = float(image.key_value_pairs["pinhole_size_AU"])
 		except KeyError:
 			raise KeyError("Pinhole size not found in image key value pairs. Please ensure that the image has a key 'pinhole_size_AU' with the pinhole size in AU as the value.")
-
-
 
 	return Dialog
 
