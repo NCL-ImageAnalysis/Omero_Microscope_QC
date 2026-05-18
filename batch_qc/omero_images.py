@@ -66,6 +66,16 @@ class OmeroObject:
 		self.core.linkAnnotation(new_ann)
 		self.update_annotations()
 
+	def add_key_values(self, conn, key_values, namespace=None):
+		key_value_data = [[k, key_values[k]] for k in key_values]
+		map_annotation = omero.gateway.MapAnnotationWrapper(conn)
+		if namespace is not None:
+			map_annotation.setNs(namespace)
+		map_annotation.setValue(key_value_data)
+		map_annotation.save()
+		self.core.linkAnnotation(map_annotation)
+		self.update_annotations()
+
 	def update_annotations(self):
 		self.annotations = [ann for ann in self.core.listAnnotations()]
 		self.file_annotations = [ann for ann in self.annotations if ann.OMERO_TYPE == omero.model.FileAnnotationI]
