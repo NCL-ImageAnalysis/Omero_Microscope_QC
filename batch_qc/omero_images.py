@@ -64,14 +64,14 @@ class OmeroObject:
 	def update_annotations(self):
 		self.annotations = [ann for ann in self.core.listAnnotations()]
 		self.file_annotations = [ann for ann in self.annotations if ann.OMERO_TYPE == omero.model.FileAnnotationI]
-		self.key_value_pairs = None
+		self.key_value_pairs = {}
 		for ann in self.annotations:
 			if ann.OMERO_TYPE == omero.model.MapAnnotationI:
-				self.key_value_pairs = dict(ann.getValue())
+				self.key_value_pairs.update(dict(ann.getValue()))
 		if self.parent:
 			self.parent.update_annotations()
 			if self.parent.key_value_pairs:
-				self.key_value_pairs = {**self.parent.key_value_pairs, **(self.key_value_pairs or {} )}
+				self.key_value_pairs = {**self.parent.key_value_pairs, **self.key_value_pairs}
 
 class ProjectObject(OmeroObject):
 	def __init__(self, project):
