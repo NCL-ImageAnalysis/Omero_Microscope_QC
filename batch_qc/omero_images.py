@@ -102,6 +102,7 @@ class ImageObject(OmeroObject):
 		self.channels = [ChannelObject(ch) for ch in image.getChannels()]
 		self.shape = (self.size_t, self.size_c, self.size_z, self.size_y, self.size_x)
 		self.image_data = None
+		self.image_plus = None
 		if load_data:
 			self.load_image_data()
 
