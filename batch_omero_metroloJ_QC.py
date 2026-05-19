@@ -47,11 +47,14 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	if not pathlib.Path(fiji_path).is_dir():
 		print(f"Fiji path {fiji_path} is not a directory. Please check the path in the config file.")
 		return
+	
+	print ("Initialising Fiji...")
 	try:
-		batch_qc.initialise(fiji_path)
+		batch_qc.initialise(fiji_path, mode="interactive")
 	except RuntimeError as e:
 		print(f"Failed to initialise Fiji. Please check the Fiji path and ensure it is correct.")
 		return
+	print("Fiji initialised successfully.")
 	
 	to_process = {coreg_name: [], psf_name: [], drift_name: [], z_accuracy_name: []}
 	to_method_name = {coreg_name: "registration", psf_name: "psf", drift_name: "drift"}
@@ -62,11 +65,19 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 			if dataset.name in to_process:
 				to_process[dataset.name] += [image for image in dataset.images if False_or_Missing(image.key_value_pairs, "QC_Processed")]
 	
+	print(f"Found {sum(len(images) for images in to_process.values())} images to process.")
+	print(f"Coregistration: {len(to_process[coreg_name])}")
+	print(f"PSF: {len(to_process[psf_name])}")
+	print(f"Drift: {len(to_process[drift_name])}")
+	print(f"Z-Accuracy: {len(to_process[z_accuracy_name])}")
+
 	for dataset_name, images in to_process.items():
 		if dataset_name in to_method_name:
 			method = to_method_name[dataset_name]
 			for image in images:
 				try:
+					project_name = image.parent.parent.name
+					print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
 					Dialog = metroloJ_access.initialize_MetroloJDialog(
 						method,
 						image, 
@@ -76,7 +87,6 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 						save_csv=save_csv, 
 						save_images=save_images
 						)
-					project_name = image.parent.parent.name
 					image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
 					image_output_directory.mkdir(parents=True, exist_ok=True)
 					ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, output_directory, image.name)
@@ -93,6 +103,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 			for image in images:
 				try:
 					project_name = image.parent.parent.name
+					print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
 					image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
 					image_output_directory.mkdir(parents=True, exist_ok=True)
 					z_accuracy.run_z_accuracy(image, str(image_output_directory))
