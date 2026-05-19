@@ -44,6 +44,6 @@ def initialise(*args, memory=None, **kwargs):
 	global _ij, _java
 
 	if memory is not None:
-		scyjava.config.add_option("-Xmx", f"{memory}")
+		scyjava.config.add_option(f"-Xmx{memory}")
 	_ij = imagej.init(*args, **kwargs)
 	_java = {name: scyjava.jimport(class_path) for name, class_path in _JAVA_CLASSES.items()}
