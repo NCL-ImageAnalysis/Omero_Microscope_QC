@@ -47,7 +47,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	omero_password = config["password"]
 	fiji_path = config["fiji_path"]
 	try:
-		conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password)
+		conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password, keep_alive=60*20)
 	except ConnectionError:
 		print("Failed to connect to OMERO server. Please check your credentials and connection details.")
 		return
@@ -81,7 +81,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 
 	for image in to_process:
 		try:
-			conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password) # Reconnect for each image to avoid timeout issues
+			conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password, keep_alive=60*20) # Reconnect for each image to avoid timeout issues
 			project_name = image.parent.parent.name
 			dataset_name = image.parent.name
 			image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
