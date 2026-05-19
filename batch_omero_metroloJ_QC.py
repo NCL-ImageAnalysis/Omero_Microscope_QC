@@ -80,6 +80,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 					conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password) # Reconnect for each image to avoid timeout issues
 					project_name = image.parent.parent.name
 					print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
+					print("Loading image data and initialising metroloJ dialog...")
 					Dialog = metroloJ_access.initialize_MetroloJDialog(
 						method,
 						image, 
@@ -91,13 +92,17 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 						)
 					image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
 					image_output_directory.mkdir(parents=True, exist_ok=True)
-					ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, output_directory, image.name)
+					print("Running metroloJ analysis...")
+					ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory, image.name)
+					print("Attaching annotations...")
 					for root, dirs, files in image_output_directory.walk():
 						for f in files:
 							image.attach_annotation(conn, str(root / f), f"qc.{method}")
 					image.add_key_values(conn, {"QC_Processed": "True"}, namespace="QC")
 					if clear_local_output:
+						print("Clearing local output directory...")
 						shutil.rmtree(image_output_directory)
+					print(f"Finished processing image {image.name} (ID: {image.id}).")
 				except Exception as e:
 					print(f"Failed to process image {image.name} (ID: {image.id}) using {method} method in dataset {dataset_name}. Error: {str(e)}")
 				finally:
