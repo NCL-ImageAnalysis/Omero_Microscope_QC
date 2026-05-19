@@ -87,7 +87,10 @@ def execute_MetroloJ_process(Dialog, report_dir, report_name):
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	image = Dialog.ip
 	image_title = image.getTitle()
-	creationInfo = batch_qc._java["simpleMetaData"].getOMECreationInfos(image, Dialog.debugMode)
+	try:
+		creationInfo = batch_qc._java["simpleMetaData"].getOMECreationInfos(image, Dialog.debugMode)
+	except batch_qc._java["NoSuchFileException"]:
+		pass # Seems to get triggered when image is pulled from OMERO
 	coords = [batch_qc._java["Double"].NaN, batch_qc._java["Double"].NaN]
 	
 	if Dialog.reportType == "pp":
