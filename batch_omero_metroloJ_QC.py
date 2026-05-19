@@ -16,6 +16,13 @@ def False_or_Missing(dict_item, key):
 		return True
 	else:
 		return False
+	
+def clear_empty_directories(path):
+	if isinstance(path, str):
+		path = pathlib.Path(path)
+	for root, dirs, files in path.walk(top_down=False):
+		if root != path and not any(path.iterdir()):
+			root.rmdir()
 
 @click.command()
 @click.argument("output_directory", type=click.Path(file_okay=False, writable=True), default=".")
@@ -127,6 +134,8 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 					print(f"Failed to process image {image.name} (ID: {image.id}) using z_accuracy method in dataset {dataset_name}. Error: {str(e)}")
 				finally:
 					image.close()
+		if clear_local_output:
+			clear_empty_directories(output_directory)
 
 if __name__ == "__main__":
 	main()
