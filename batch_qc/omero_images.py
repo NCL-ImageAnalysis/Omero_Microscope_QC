@@ -155,6 +155,12 @@ class ImageObject(OmeroObject):
 		image_plus.setCalibration(CalibrationObj)
 		self.image_plus = image_plus
 		return image_plus
+
+	def close(self):
+		if self.image_plus is not None:
+			self.image_plus.close()
+		self.image_data = None
+		self.image_plus = None
 	
 class ChannelObject(OmeroObject):
 	def __init__(self, channel):

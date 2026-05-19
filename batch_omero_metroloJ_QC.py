@@ -30,8 +30,9 @@ def False_or_Missing(dict_item, key):
 @click.option("--save_csv/--no_save_csv", default=True, help="Whether to save the MetroloJ results as a CSV and attach to OMERO.")
 @click.option("--save_images/--no_save_images", default=True, help="Whether to save the MetroloJ output images and attach to OMERO.")
 @click.option("--clear_local_output", default=False, is_flag=True, help="Whether to clear the local output directory after processing each image.")
+@click.option("--memory", default="6g", type=str, help="Amount of memory to allocate to Fiji (e.g. '6g' for 6 gigabytes).")
 
-def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accuracy_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, clear_local_output):
+def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accuracy_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, clear_local_output, memory):
 	with open(config_path, "r") as f:
 		config = json.load(f)
 	omero_hostname = config["hostname"]
@@ -50,7 +51,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	
 	print ("Initialising Fiji...")
 	try:
-		batch_qc.initialise(fiji_path, mode="interactive")
+		batch_qc.initialise(fiji_path, mode="interactive", memory=memory)
 	except RuntimeError as e:
 		print(f"Failed to initialise Fiji. Please check the Fiji path and ensure it is correct.")
 		return
@@ -76,6 +77,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 			method = to_method_name[dataset_name]
 			for image in images:
 				try:
+					conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password) # Reconnect for each image to avoid timeout issues
 					project_name = image.parent.parent.name
 					print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
 					Dialog = metroloJ_access.initialize_MetroloJDialog(
@@ -98,10 +100,13 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 						shutil.rmtree(image_output_directory)
 				except Exception as e:
 					print(f"Failed to process image {image.name} (ID: {image.id}) using {method} method in dataset {dataset_name}. Error: {str(e)}")
+				finally:
+					image.close()
 
 		elif dataset_name == z_accuracy_name:
 			for image in images:
 				try:
+					conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password) # Reconnect for each image to avoid timeout issues
 					project_name = image.parent.parent.name
 					print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
 					image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
@@ -115,6 +120,8 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 						shutil.rmtree(image_output_directory)
 				except Exception as e:
 					print(f"Failed to process image {image.name} (ID: {image.id}) using z_accuracy method in dataset {dataset_name}. Error: {str(e)}")
+				finally:
+					image.close()
 
 if __name__ == "__main__":
 	main()
