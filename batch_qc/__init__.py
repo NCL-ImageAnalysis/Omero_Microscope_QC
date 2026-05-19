@@ -30,11 +30,20 @@ _JAVA_CLASSES = {
 	"Measurements": "ij.measure.Measurements",
 	"ResultsTable": "ij.measure.ResultsTable",
 	"ZProjector": "ij.plugin.ZProjector",
-	"Analyzer": "ij.plugin.filter.Analyzer"
+	"Analyzer": "ij.plugin.filter.Analyzer",
+	"NoSuchFileException": "java.nio.file.NoSuchFileException"
 }
 
-def initialise(*args, **kwargs):
+def initialise(*args, memory=None, **kwargs):
+	"""Initialise ImageJ and import required Java classes. Must be called before using any other functions in this module.
+	Takes arguments used for imagej.init() and an optional memory argument to specify the maximum memory allocation pool for the Java virtual machine (e.g. "4g" for 4 gigabytes). If memory is not specified, the default memory allocation will be used.
+
+	Args:
+		memory (str, optional): The maximum memory allocation pool for the Java virtual machine (e.g. "4g" for 4 gigabytes). Defaults to None.
+	"""
 	global _ij, _java
 
+	if memory is not None:
+		scyjava.config.add_option("-Xmx", f"{memory}")
 	_ij = imagej.init(*args, **kwargs)
 	_java = {name: scyjava.jimport(class_path) for name, class_path in _JAVA_CLASSES.items()}
