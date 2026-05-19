@@ -93,7 +93,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 					image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
 					image_output_directory.mkdir(parents=True, exist_ok=True)
 					print("Running metroloJ analysis...")
-					ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory, image.name)
+					ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, str(image_output_directory), image.name)
 					print("Attaching annotations...")
 					for root, dirs, files in image_output_directory.walk():
 						for f in files:
