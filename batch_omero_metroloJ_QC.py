@@ -64,78 +64,68 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 		return
 	print("Fiji initialised successfully.")
 	
-	to_process = {coreg_name: [], psf_name: [], drift_name: [], z_accuracy_name: []}
+	to_process = []
 	to_method_name = {coreg_name: "registration", psf_name: "psf", drift_name: "drift"}
 
 	for microscope_project in conn.getObjects("Project"):
 		project = omero_images.ProjectObject(microscope_project)
 		for dataset in project.datasets:
-			if dataset.name in to_process:
-				to_process[dataset.name] += [image for image in dataset.images if False_or_Missing(image.key_value_pairs, "QC_Processed")]
+			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name]:
+				to_process += [image for image in dataset.images if False_or_Missing(image.key_value_pairs, "QC_Processed")]
 	
-	print(f"Found {sum(len(images) for images in to_process.values())} images to process.")
-	print(f"Coregistration: {len(to_process[coreg_name])}")
-	print(f"PSF: {len(to_process[psf_name])}")
-	print(f"Drift: {len(to_process[drift_name])}")
-	print(f"Z-Accuracy: {len(to_process[z_accuracy_name])}")
+	print(f"Found {len(to_process)} images to process.")
+	print(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
+	print(f"PSF: {len([image for image in to_process if image.parent.name == psf_name])}")
+	print(f"Drift: {len([image for image in to_process if image.parent.name == drift_name])}")
+	print(f"Z-Accuracy: {len([image for image in to_process if image.parent.name == z_accuracy_name])}")
 
-	for dataset_name, images in to_process.items():
-		if dataset_name in to_method_name:
-			method = to_method_name[dataset_name]
-			for image in images:
-				try:
-					conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password) # Reconnect for each image to avoid timeout issues
-					project_name = image.parent.parent.name
-					print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
-					print("Loading image data and initialising metroloJ dialog...")
-					Dialog = metroloJ_access.initialize_MetroloJDialog(
-						method,
-						image, 
-						thresholding_method=thresholding_method, 
-						center_dectection_method=center_dectection_method, 
-						save_pdf=save_pdf, 
-						save_csv=save_csv, 
-						save_images=save_images
-						)
-					image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
-					image_output_directory.mkdir(parents=True, exist_ok=True)
-					print("Running metroloJ analysis...")
-					ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, str(image_output_directory), image.name)
-					print("Attaching annotations...")
-					for root, dirs, files in image_output_directory.walk():
-						for f in files:
-							image.attach_annotation(conn, str(root / f), f"qc.{method}")
-					image.add_key_values(conn, {"QC_Processed": "True"}, namespace="QC")
-					if clear_local_output:
-						print("Clearing local output directory...")
-						shutil.rmtree(image_output_directory)
-					print(f"Finished processing image {image.name} (ID: {image.id}).")
-				except Exception as e:
-					print(f"Failed to process image {image.name} (ID: {image.id}) using {method} method in dataset {dataset_name}. Error: {str(e)}")
-				finally:
-					image.close()
+	for image in to_process:
+		try:
+			conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password) # Reconnect for each image to avoid timeout issues
+			project_name = image.parent.parent.name
+			dataset_name = image.parent.name
+			image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
+			image_output_directory.mkdir(parents=True, exist_ok=True)
 
-		elif dataset_name == z_accuracy_name:
-			for image in images:
-				try:
-					conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password) # Reconnect for each image to avoid timeout issues
-					project_name = image.parent.parent.name
-					print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
-					image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
-					image_output_directory.mkdir(parents=True, exist_ok=True)
-					z_accuracy.run_z_accuracy(image, str(image_output_directory))
-					for root, dirs, files in image_output_directory.walk():
-						for f in files:
-							image.attach_annotation(conn, str(root / f), "qc.z_accuracy")
-					image.add_key_values(conn, {"QC_Processed": "True"}, namespace="QC")
-					if clear_local_output:
-						shutil.rmtree(image_output_directory)
-				except Exception as e:
-					print(f"Failed to process image {image.name} (ID: {image.id}) using z_accuracy method in dataset {dataset_name}. Error: {str(e)}")
-				finally:
-					image.close()
+			if dataset_name in to_method_name:
+				method = to_method_name[dataset_name]
+				print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
+				print("Loading image data and initialising metroloJ dialog...")
+				Dialog = metroloJ_access.initialize_MetroloJDialog(
+					method,
+					image, 
+					thresholding_method=thresholding_method, 
+					center_dectection_method=center_dectection_method, 
+					save_pdf=save_pdf, 
+					save_csv=save_csv, 
+					save_images=save_images)
+				print("Running metroloJ analysis...")
+				ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, str(image_output_directory), image.name)
+		
+			elif dataset_name == z_accuracy_name:
+				method = "z_accuracy"
+				print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
+				z_accuracy.run_z_accuracy(image, str(image_output_directory))
+			
+			print("Attaching results to OMERO...")
+			for root, dirs, files in image_output_directory.walk():
+				for f in files:
+					image.attach_annotation(conn, str(root / f), f"qc.{method}")
+			image.add_key_values(conn, {"QC_Processed": "True"}, namespace="QC")
+
+			if clear_local_output:
+				print("Clearing local output directory...")
+				shutil.rmtree(image_output_directory)
+			print(f"Finished processing image {image.name} (ID: {image.id}).")
+
+		except Exception as e:
+			print(f"Failed to process image {image.name} (ID: {image.id}) using {method} method in dataset {dataset_name}. Error: {str(e)}")
+		finally:
+			image.close()
+
 		if clear_local_output:
 			clear_empty_directories(output_directory)
+	conn.close()
 
 if __name__ == "__main__":
 	main()
