@@ -109,10 +109,10 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	to_method_name = {coreg_name: "registration", psf_name: "psf", drift_name: "drift"}
 
 	for microscope_project in conn.getObjects("Project"):
-		project = omero_images.ProjectObject(microscope_project)
-		for dataset in project.datasets:
+		project = omero_images.OmeroObject(microscope_project)
+		for dataset in project.children:
 			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name]:
-				to_process += [image for image in dataset.images if False_or_Missing(image.key_value_pairs, "QC_Processed")]
+				to_process += [image for image in dataset.children if False_or_Missing(image.key_value_pairs, "QC_Processed")]
 	
 	print(f"Found {len(to_process)} images to process.")
 	print(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
