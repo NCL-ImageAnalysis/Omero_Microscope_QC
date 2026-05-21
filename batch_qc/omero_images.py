@@ -47,7 +47,7 @@ class OmeroObject:
 		if omero_entity.OMERO_CLASS == "Image":
 			return ImageObject(omero_entity, parent=parent)
 		else:
-			return cls(omero_entity, parent=parent)
+			return ParentObject(omero_entity, parent=parent)
 
 	def __init__(self, omero_entity, parent=None):
 		self.core = omero_entity
