@@ -95,6 +95,11 @@ class OmeroObject:
 			self.parent.update_annotations()
 			if self.parent.key_value_pairs:
 				self.key_value_pairs = {**self.parent.key_value_pairs, **self.key_value_pairs}
+		for k, v in self.key_value_pairs.items():
+			if v == "True":
+				self.key_value_pairs[k] = True
+			elif v == "False":
+				self.key_value_pairs[k] = False
 	
 	def reload(self, connection):
 		self.core = connection.getObject(self.omero_class, self.id)
