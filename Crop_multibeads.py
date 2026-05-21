@@ -114,7 +114,7 @@ def main(input_image, output_directory):
 	Imp = BF.openImagePlus(Options)[0]
 	Projected = ZProjector.run(Imp, "max")
 	mask = Projected.duplicate()
-	mask.removeScale()
+	Projected.removeScale()
 	bg = mask.getStatistics().mode
 	maxi = mask.getStatistics().max
 	# Gaussian blur image
