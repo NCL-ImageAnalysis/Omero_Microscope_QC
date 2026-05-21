@@ -20,6 +20,7 @@ from ij import ImagePlus
 from ij import process
 from ij.process import ImageStatistics
 from ij.measure import Measurements
+from ij.measure import Calibration
 from ij import WindowManager
 from ij.io import FileSaver
 from ij.gui import Line
@@ -28,7 +29,7 @@ from ij.gui import Roi
 from ij.measure import Measurements
 from ij.measure import ResultsTable
 from ij.plugin import ZProjector
-from ij.plugin.filter import Analyzer
+from ij.plugin.filter import Analyzer, AVI_Writer
 # Bioformats modules
 from loci.plugins import BF
 from loci.plugins.in import ImporterOptions
@@ -87,11 +88,30 @@ def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
 	Image.resetRoi()
 	return OutputList
 	
-def crop_points(img, xy):
-	img.setRoi(int(xy[0]), int(xy[1]), 6, 6)
-	
+def crop_points(img, xy, cropsize, saveto, filename, index):
+	img.setRoi(int(xy[0])-(cropsize/2), int(xy[1])-(cropsize/2), cropsize, cropsize)
+	out = img.crop("stack")
+	CropProject = ZProjector.run(out, "max")
+	bg = CropProject.getStatistics().mode
+	maxi = CropProject.getStatistics().max
+	# Gaussian blur image
+	blur = CropProject.getProcessor()
+	gb = GaussianBlur()
+	gb.blurGaussian(blur, 2.0)
+	CropProject.updateAndDraw()
+	# calculate treshold from background
+	# Thresholds the image to get the ladder
+	IJ.setThreshold(CropProject, bg*5, maxi)
+	IJ.run(CropProject, "Convert to Mask", "")
+	RoiList = analyzeParticles(CropProject)
+	if len(RoiList) == 1:
+		out.show()
+		writer = AVI_Writer()
+		outpath = saveto+"\\"+filename+"_"+str(index+1)+".avi"
+		print(outpath)
+		writer.writeImage(out, outpath, AVI_Writer.NO_COMPRESSION, 0)
 
-def main(input_image, output_directory):
+def main(input_image, output_directory, cropsize_um):
 	# This section sets the measurements that will be used
 	AnalyzerClass = Analyzer()
 	# Gets original measurements to reset later
@@ -102,7 +122,7 @@ def main(input_image, output_directory):
 
 	# Gets the needed paths and filenames for input and output
 	FileName = input_image.getName()
-	FileNameNoExtension = ".".join(FileName.split("."))[:-1]
+	FileNameNoExtension = FileName.split(".")[0]
 	OutputPath = output_directory.getPath()
 
 	# Imports the image using Bioformats-------------------v
@@ -113,8 +133,11 @@ def main(input_image, output_directory):
 	Options.setAutoscale(True)
 	Imp = BF.openImagePlus(Options)[0]
 	Projected = ZProjector.run(Imp, "max")
+	#print(Projected.getDimensions())
+	# calculate desired crop size in pixels
+	cropsize_px = int(Projected.getCalibration().getRawX(cropsize_um))
 	mask = Projected.duplicate()
-	Projected.removeScale()
+	mask.removeScale()
 	bg = mask.getStatistics().mode
 	maxi = mask.getStatistics().max
 	# Gaussian blur image
@@ -134,15 +157,16 @@ def main(input_image, output_directory):
 	# Gets the centroid of each ROI and adds to a list-------------------v
 	PointList = []
 	for ThisRoi in RoiList:
-		Centroid = getRoiMeasurements(ThisRoi, Projected, CentroidString)
+		Centroid = getRoiMeasurements(ThisRoi, mask, CentroidString)
 		# Must be a tuple to be hashable in dictionary
 		PointList.append(tuple(Centroid))
-	print(PointList)
-	#crop_points(Projected, PointList[1])
-	Projected.show()
+	#print(PointList)
+	for i in range(len(PointList)):
+		crop_points(Imp, PointList[i], cropsize_px, OutputPath, FileNameNoExtension, i)
+
 	#--------------------------------------------------------------------^
 if __name__ == "__main__":
-	main(InputImage, OutputDirectory)
+	main(InputImage, OutputDirectory, 6)
 	
 # pseudocode
 
