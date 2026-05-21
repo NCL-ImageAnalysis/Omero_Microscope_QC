@@ -24,6 +24,45 @@ def clear_empty_directories(path):
 		if root != path and not any(path.iterdir()):
 			root.rmdir()
 
+def run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name):
+	project_name = image.parent.parent.name
+	dataset_name = image.parent.name
+	image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
+	image_output_directory.mkdir(parents=True, exist_ok=True)
+
+	if dataset_name in to_method_name:
+		method = to_method_name[dataset_name]
+		print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
+		print("Loading image data and initialising metroloJ dialog...")
+		Dialog = metroloJ_access.initialize_MetroloJDialog(
+			method,
+			image, 
+			thresholding_method=thresholding_method, 
+			center_dectection_method=center_dectection_method, 
+			save_pdf=save_pdf, 
+			save_csv=save_csv, 
+			save_images=save_images)
+		print("Running metroloJ analysis...")
+		ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, str(image_output_directory), image.name)
+
+	elif dataset_name == z_accuracy_name:
+		method = "z_accuracy"
+		print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
+		z_accuracy.run_z_accuracy(image, str(image_output_directory))
+	return method, image_output_directory
+
+def attach_results(image, output_directory, connection, method, clear_local_output=False):
+	print("Attaching results to OMERO...")
+	for root, dirs, files in output_directory.walk():
+		for f in files:
+			image.attach_annotation(connection, str(root / f), f"qc.{method}")
+	image.add_key_values(connection, {"QC_Processed": "True"}, namespace="QC")
+
+	if clear_local_output:
+		print("Clearing local output directory...")
+		shutil.rmtree(output_directory)
+	print(f"Finished processing image {image.name} (ID: {image.id}).")
+
 @click.command()
 @click.argument("output_directory", type=click.Path(file_okay=False, writable=True), default=".")
 @click.option("--config_path", default=DEFAULT_CONFIG_PATH, type=click.Path(exists=True), help="Path to JSON config file containing OMERO connection details and Fiji path.")
@@ -46,8 +85,10 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	omero_username = config["username"]
 	omero_password = config["password"]
 	fiji_path = config["fiji_path"]
+
+	conn_params = (omero_hostname, omero_username, omero_password)
 	try:
-		conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password, keep_alive=60*20)
+		conn = batch_qc.omero_images.connect(*conn_params)
 	except ConnectionError:
 		print("Failed to connect to OMERO server. Please check your credentials and connection details.")
 		return
@@ -81,45 +122,22 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 
 	for image in to_process:
 		try:
-			conn = batch_qc.omero_images.connect(omero_hostname, omero_username, omero_password, keep_alive=60*20) # Reconnect for each image to avoid timeout issues
-			project_name = image.parent.parent.name
-			dataset_name = image.parent.name
-			image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
-			image_output_directory.mkdir(parents=True, exist_ok=True)
-
-			if dataset_name in to_method_name:
-				method = to_method_name[dataset_name]
-				print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
-				print("Loading image data and initialising metroloJ dialog...")
-				Dialog = metroloJ_access.initialize_MetroloJDialog(
-					method,
-					image, 
-					thresholding_method=thresholding_method, 
-					center_dectection_method=center_dectection_method, 
-					save_pdf=save_pdf, 
-					save_csv=save_csv, 
-					save_images=save_images)
-				print("Running metroloJ analysis...")
-				ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, str(image_output_directory), image.name)
-		
-			elif dataset_name == z_accuracy_name:
-				method = "z_accuracy"
-				print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
-				z_accuracy.run_z_accuracy(image, str(image_output_directory))
-			
-			print("Attaching results to OMERO...")
-			for root, dirs, files in image_output_directory.walk():
-				for f in files:
-					image.attach_annotation(conn, str(root / f), f"qc.{method}")
-			image.add_key_values(conn, {"QC_Processed": "True"}, namespace="QC")
-
-			if clear_local_output:
-				print("Clearing local output directory...")
-				shutil.rmtree(image_output_directory)
-			print(f"Finished processing image {image.name} (ID: {image.id}).")
-
+			try:
+				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name)
+			except ConnectionError:
+				print("Connection to OMERO server lost. Attempting to reconnect and retry...")
+				conn = batch_qc.omero_images.connect(*conn_params)
+				image.reload(conn)
+				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name)
+			try:
+				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
+			except ConnectionError:
+				print("Connection to OMERO server lost while attaching results. Attempting to reconnect and retry...")
+				conn = batch_qc.omero_images.connect(*conn_params)
+				image.reload(conn)
+				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 		except Exception as e:
-			print(f"Failed to process image {image.name} (ID: {image.id}) using {method} method in dataset {dataset_name}. Error: {str(e)}")
+			print(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}")
 		finally:
 			image.close()
 
