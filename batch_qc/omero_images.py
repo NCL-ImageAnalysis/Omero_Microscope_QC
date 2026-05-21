@@ -47,6 +47,7 @@ class OmeroObject:
 		self.name = omero_entity.getName()
 		self.id = omero_entity.getId()
 		self.parent = parent
+		self.omero_class = omero_entity.OMERO_CLASS
 		self.update_annotations()
 
 	def attach_annotation(self, conn, annotation_path, ns, mimetype=None, desc=""):
@@ -87,6 +88,9 @@ class OmeroObject:
 			self.parent.update_annotations()
 			if self.parent.key_value_pairs:
 				self.key_value_pairs = {**self.parent.key_value_pairs, **self.key_value_pairs}
+	
+	def reload(self, connection):
+		self.core = connection.getObject(self.omero_class, self.id)
 
 class ProjectObject(OmeroObject):
 	def __init__(self, project):
