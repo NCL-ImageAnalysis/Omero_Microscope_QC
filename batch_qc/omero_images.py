@@ -42,6 +42,13 @@ def download_annotation_file(annotation_file, output_directory):
 			f.write(chunk)
 
 class OmeroObject:
+	@classmethod
+	def from_omero_entity(cls, omero_entity, parent=None):
+		if omero_entity.OMERO_CLASS == "Image":
+			return ImageObject(omero_entity, parent=parent)
+		else:
+			return cls(omero_entity, parent=parent)
+
 	def __init__(self, omero_entity, parent=None):
 		self.core = omero_entity
 		self.name = omero_entity.getName()
@@ -49,7 +56,7 @@ class OmeroObject:
 		self.parent = parent
 		self.omero_class = omero_entity.OMERO_CLASS
 		self.update_annotations()
-
+		
 	def attach_annotation(self, conn, annotation_path, ns, mimetype=None, desc=""):
 		if mimetype is None:
 			extension = os.path.splitext(annotation_path)[1].lower()
@@ -91,20 +98,20 @@ class OmeroObject:
 	
 	def reload(self, connection):
 		self.core = connection.getObject(self.omero_class, self.id)
+		if self.children:
+			[child.reload(connection) for child in self.children]
+		if self.parent:
+			self.parent.reload(connection)
 
-class ProjectObject(OmeroObject):
-	def __init__(self, project):
-		super().__init__(project)
-		self.datasets = [DatasetObject(ds, parent=self) for ds in project.listChildren()]
-
-class DatasetObject(OmeroObject):
-	def __init__(self, dataset, parent=None):
-		super().__init__(dataset, parent=parent)
-		self.images = [ImageObject(img, parent=self) for img in dataset.listChildren()]
+class ParentObject(OmeroObject):
+	def __init__(self, omero_entity, parent=None):
+		super().__init__(omero_entity, parent=parent)
+		self.children = [OmeroObject.from_omero_entity(child, parent=self) for child in omero_entity.listChildren()]
 
 class ImageObject(OmeroObject):
 	def __init__(self, image, load_data=False, parent=None):
 		super().__init__(image, parent=parent)
+		self.children = None
 		self.size_x = image.getSizeX()
 		self.size_y = image.getSizeY()
 		self.size_z = image.getSizeZ()
