@@ -6,6 +6,7 @@ from batch_qc import omero_images, metroloJ_access, z_accuracy
 import click
 import pathlib
 import shutil
+import Ice
 
 DEFAULT_CONFIG_PATH= pathlib.Path(__file__).resolve().parent / ".omero_config"
 
@@ -124,14 +125,14 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 		try:
 			try:
 				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name)
-			except ConnectionError:
+			except ConnectionError or Ice.ConnectionLostException:
 				print("Connection to OMERO server lost. Attempting to reconnect and retry...")
 				conn = batch_qc.omero_images.connect(*conn_params)
 				image.reload(conn)
 				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name)
 			try:
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
-			except ConnectionError:
+			except ConnectionError or Ice.ConnectionLostException:
 				print("Connection to OMERO server lost while attaching results. Attempting to reconnect and retry...")
 				conn = batch_qc.omero_images.connect(*conn_params)
 				image.reload(conn)
