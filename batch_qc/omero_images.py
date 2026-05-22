@@ -213,3 +213,8 @@ class RoiObject(OmeroObject):
 		self.Width = self.shape.getWidth().getValue()
 		self.Height = self.shape.getHeight().getValue()
 		self.Tile = (round(self.X), round(self.Y), round(self.Width), round(self.Height))
+	
+	def load_tile_data(self, c=None, t=None, z=None):
+		if self.parent is None:
+			raise RuntimeError("Roi does not have a parent image to load data from")
+		self.parent.load_image_data(c=c, t=t, z=z, tile=self.Tile)
