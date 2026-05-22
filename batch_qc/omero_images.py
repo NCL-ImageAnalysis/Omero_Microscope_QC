@@ -134,6 +134,7 @@ class ImageObject(OmeroObject):
 		self.shape = (self.size_t, self.size_c, self.size_z, self.size_y, self.size_x)
 		self.image_data = None
 		self.image_plus = None
+		self.rois = [RoiObject(roi, parent=self) for roi in image.getROIs()]
 		if load_data:
 			self.load_image_data()
 
@@ -189,3 +190,12 @@ class ChannelObject(OmeroObject):
 			self.mode = None
 	def attach_annotation(self, *args, **kwargs):
 		raise NotImplementedError("Attaching annotations to channels is not supported")
+
+class RoiObject(OmeroObject):
+	def __init__(self, roi, parent=None):
+		super().__init__(roi, parent=parent)
+		self.shape = roi.copyShapes()[0]
+		self.X = self.shape.getX().getValue()
+		self.Y = self.shape.getY().getValue()
+		self.Height = self.shape.getHeight().getValue()
+		self.Width = self.shape.getWidth().getValue()
