@@ -10,13 +10,13 @@ import Ice
 
 DEFAULT_CONFIG_PATH= pathlib.Path(__file__).resolve().parent / ".omero_config"
 
-def False_or_Missing(dict_item, key):
+def Bool_or_Missing(dict_item, key):
 	if key not in dict_item:
-		return True
-	elif dict_item[key] == False:
-		return True
-	else:
 		return False
+	if type(dict_item[key]) == bool:
+		return dict_item[key]
+	else:
+		raise ValueError(f"Key '{key}' found in key value pairs but value is of type {type(dict_item[key])} rather than bool.")
 	
 def clear_empty_directories(path):
 	if isinstance(path, str):
@@ -30,27 +30,40 @@ def run_analysis(image, output_directory, to_method_name, thresholding_method, c
 	dataset_name = image.parent.name
 	image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
 	image_output_directory.mkdir(parents=True, exist_ok=True)
+	if Bool_or_Missing(image.key_value_pairs, "use_rois"):
+		if len(image.rois) == 0:
+			print(f"Skipping image {image.name} (ID: {image.id}) as marked as using ROIs but no ROIs found.")
+			return None, None
+		roi_list = image.rois
+	else:
+		roi_list = [None]
 
-	if dataset_name in to_method_name:
-		method = to_method_name[dataset_name]
-		print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
-		print("Loading image data and initialising metroloJ dialog...")
-		Dialog = metroloJ_access.initialize_MetroloJDialog(
-			method,
-			image, 
-			thresholding_method=thresholding_method, 
-			center_dectection_method=center_dectection_method, 
-			save_pdf=save_pdf, 
-			save_csv=save_csv, 
-			save_images=save_images)
-		print("Running metroloJ analysis...")
-		ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, str(image_output_directory), image.name)
+	for roi in roi_list:
+		if roi is not None:
+			roi.load_tile_data()
+			save_suffix = f"_ROI{roi.id}"
+		else:
+			save_suffix = ""
+		if dataset_name in to_method_name:
+			method = to_method_name[dataset_name]
+			print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
+			print("Loading image data and initialising metroloJ dialog...")
+			Dialog = metroloJ_access.initialize_MetroloJDialog(
+				method,
+				image, 
+				thresholding_method=thresholding_method, 
+				center_dectection_method=center_dectection_method, 
+				save_pdf=save_pdf, 
+				save_csv=save_csv, 
+				save_images=save_images)
+			print("Running metroloJ analysis...")
+			ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, str(image_output_directory), image.name + save_suffix)
 
-	elif dataset_name == z_accuracy_name:
-		method = "z_accuracy"
-		print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
-		z_accuracy.run_z_accuracy(image, str(image_output_directory))
-	return method, image_output_directory
+		elif dataset_name == z_accuracy_name:
+			method = "z_accuracy"
+			print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
+			z_accuracy.run_z_accuracy(image, str(image_output_directory), save_suffix=save_suffix)
+		return method, image_output_directory
 
 def attach_results(image, output_directory, connection, method, clear_local_output=False):
 	print("Attaching results to OMERO...")
@@ -113,7 +126,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 		project = omero_images.OmeroObject.from_omero_entity(microscope_project)
 		for dataset in project.children:
 			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name]:
-				to_process += [image for image in dataset.children if False_or_Missing(image.key_value_pairs, "QC_Processed")]
+				to_process += [image for image in dataset.children if not Bool_or_Missing(image.key_value_pairs, "QC_Processed")]
 	
 	print(f"Found {len(to_process)} images to process.")
 	print(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
@@ -130,6 +143,9 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 				conn = batch_qc.omero_images.connect(*conn_params)
 				image.reload(conn)
 				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name)
+				if method is None:
+					image.close()
+					continue  # Skip attaching results if analysis was not run due to missing ROIs
 			try:
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 			except ConnectionError or Ice.ConnectionLostException:

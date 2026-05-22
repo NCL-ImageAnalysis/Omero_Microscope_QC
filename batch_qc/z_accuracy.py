@@ -156,7 +156,7 @@ def selectWindow(Pattern):
 	return False
 
 def run_z_accuracy(input_image,
-		output_directory):
+		output_directory, save_suffix=""):
 	if batch_qc._ij is None:
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	# This section sets the measurements that will be used
@@ -317,7 +317,7 @@ def run_z_accuracy(input_image,
 	# Resets the contrast for easier viewing
 	SlicedImp.resetDisplayRange()
 	# Saves the XZ image and closes to save memory
-	batch_qc._java["FileSaver"](SlicedImp).saveAsTiff(os.path.join(OutputPath, FileNameNoExtension + "_XZ.tif"))
+	batch_qc._java["FileSaver"](SlicedImp).saveAsTiff(os.path.join(OutputPath, FileNameNoExtension + save_suffix + "_XZ.tif"))
 	SlicedImp.close()
 
 	# Gets the results table and copies it so the displayed one can be closed
@@ -342,7 +342,7 @@ def run_z_accuracy(input_image,
 		MaximaResults.setValue("AxialDiff", SortedRow, AxialDiff)
 
 	# Saves the results table
-	MaximaResults.saveAs(os.path.join(OutputPath, FileNameNoExtension + "_XZ.csv"))
+	MaximaResults.saveAs(os.path.join(OutputPath, FileNameNoExtension + save_suffix + "_XZ.csv"))
 
 	# Resets the measurements to the original settings
 	AnalyzerClass.setMeasurements(OriginalMeasurements)
