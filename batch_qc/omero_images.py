@@ -41,6 +41,16 @@ def download_annotation_file(annotation_file, output_directory):
 		for chunk in annotation_file.getFileInChunks():
 			f.write(chunk)
 
+def list_from_slice(slice_obj, max_value):
+	if type(slice_obj) == int:
+		return [slice_obj]
+	elif type(slice_obj) == slice:
+		if slice_obj.start is None:
+			slice_obj = slice(0, slice_obj.stop, slice_obj.step)
+		if slice_obj.stop is None:
+			slice_obj = slice(slice_obj.start, max_value, slice_obj.step)
+		return list(range(slice_obj.start, slice_obj.stop))
+
 class OmeroObject:
 	@classmethod
 	def from_omero_entity(cls, omero_entity, parent=None):
@@ -138,21 +148,32 @@ class ImageObject(OmeroObject):
 		if load_data:
 			self.load_image_data()
 
-	def load_plane(self, c, t, z):
-		self.image_data[t, c, z, :, :] = np.array(self.pixels.getPlane(z, c, t))
+	# def load_plane(self, z, c, t, tile=None):
+		
+	# 	self.image_data[t, c, z] = np.array(self.pixels.getPlane(z, c, t))
 
-	def load_image_data(self, c=None, t=None, z=None):
-		if c is None:
-			c = list(range(self.size_c))
-		if t is None:
+	def load_image_data(self, slicing=None):
+		if slicing is None:
 			t = list(range(self.size_t))
-		if z is None:
+			c = list(range(self.size_c))
 			z = list(range(self.size_z))
+			shape = self.shape
 
-		self.image_data = np.zeros((len(t), len(c), len(z), self.size_y, self.size_x))
-		all_iterations = list(itertools.product(c, t, z))
-		for args in all_iterations:
-			self.load_plane(*args)
+		else:
+			t = list_from_slice(slicing[0], self.size_t)
+			c = list_from_slice(slicing[1], self.size_c)
+			z = list_from_slice(slicing[2], self.size_z)
+			y_size = len(list_from_slice(slicing[3], self.size_y))
+			x_size = len(list_from_slice(slicing[4], self.size_x))
+			shape = (len(t), len(c), len(z), y_size, x_size)
+			tile = 
+
+		self.image_data = np.zeros(shape)
+		all_iterations = list(itertools.product(z, c, t))
+		if slicing is not None:
+			for args in all_iterations:
+				self.load_plane(*args, y=slicing[3], x=slicing[4])
+	
 		self.image_data = xarray.DataArray(self.image_data, dims=["t", "ch", "pln", "row", "col"], name=self.name)
 		self.shape = self.image_data.shape
 	
