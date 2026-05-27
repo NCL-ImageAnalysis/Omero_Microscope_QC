@@ -148,7 +148,7 @@ class ImageObject(OmeroObject):
 		
 		# Using TCZXY order as Omero outputs X before Y. Swapped later
 		if tile is None:
-			self.image_data = np.zeros((len(t), len(c), len(z), self.size_x, self.size_y))
+			self.image_data = np.zeros((len(t), len(c), len(z), self.size_y, self.size_x))
 		else:
 			self.image_data = np.zeros((len(t), len(c), len(z), round(tile[3]), round(tile[2])))
 		
@@ -166,7 +166,7 @@ class ImageObject(OmeroObject):
 		# Swap X and Y axes to match ImageJ convention
 		self.image_data = np.moveaxis(self.image_data, 3, -1)
 	
-		self.image_data = xarray.DataArray(self.image_data, dims=["t", "ch", "pln", "row", "col"], name=self.name)
+		self.image_data = xarray.DataArray(self.image_data, dims=["t", "c", "z", "y", "x"], name=self.name)
 		self.shape = self.image_data.shape
 	
 	def generate_ImagePlus(self):
