@@ -31,7 +31,7 @@ def run_analysis(image, output_directory, to_method_name, thresholding_method, c
 	dataset_name = image.parent.name
 	image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
 	image_output_directory.mkdir(parents=True, exist_ok=True)
-	
+
 	if Bool_or_Missing(image.key_value_pairs, "use_rois"):
 		if len(image.rois) == 0:
 			print(f"Skipping image {image.name} (ID: {image.id}) as marked as using ROIs but no ROIs found.")
@@ -59,7 +59,7 @@ def run_analysis(image, output_directory, to_method_name, thresholding_method, c
 				save_csv=save_csv, 
 				save_images=save_images)
 			print("Running metroloJ analysis...")
-			ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, str(image_output_directory), image.name + save_suffix)
+			ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, str(image_output_directory), image.name + save_suffix, image.acquisition_date)
 
 		elif dataset_name == z_accuracy_name:
 			method = "z_accuracy"

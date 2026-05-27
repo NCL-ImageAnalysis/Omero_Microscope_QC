@@ -127,6 +127,7 @@ class ImageObject(OmeroObject):
 		self.scale_y = self.pixels.getPhysicalSizeY()
 		self.scale_z = self.pixels.getPhysicalSizeZ()
 		self.dim_order = "TCZYX"
+		self.acquisition_date = image.getAcquisitionDate()
 		self.objective = image.getObjectiveSettings()
 		self.refractive_index = self.objective.getRefractiveIndex()
 		self.NA = self.objective.getObjective().getLensNA()

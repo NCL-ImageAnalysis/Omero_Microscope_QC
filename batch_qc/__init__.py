@@ -14,7 +14,6 @@ _JAVA_CLASSES = {
 	"Calibration": "ij.measure.Calibration",
 	"MetroloJDialog": "metroloJ_QC.setup.MetroloJDialog",
 	"QC_Options": "metroloJ_QC.setup.QC_Options",
-	"simpleMetaData": "metroloJ_QC.importer.simpleMetaData",
 	"coAlignement": "metroloJ_QC.coalignement.coAlignement",
 	"coAlignementReport": "metroloJ_QC.report.coAlignementReport",
 	"driftProfiler": "metroloJ_QC.stage.driftProfiler",

@@ -92,15 +92,12 @@ def initialize_MetroloJDialog(method,
 					raise TypeError(f"Error: {dict_key} requires input of the type {type(getattr(Dialog, dict_key))}.")
 	return Dialog
 
-def execute_MetroloJ_process(Dialog, report_dir, report_name):
+def execute_MetroloJ_process(Dialog, report_dir, report_name, aquisition_date):
 	if batch_qc._ij is None:
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	image = Dialog.ip
 	image_title = image.getTitle()
-	try:
-		creationInfo = batch_qc._java["simpleMetaData"].getOMECreationInfos(image, Dialog.debugMode)
-	except batch_qc._java["NoSuchFileException"]:
-		pass # Seems to get triggered when image is pulled from OMERO
+	creationInfo = [aquisition_date.strftime("%Y-%m-%d %H:%M:%S"), "from Metadata"]
 	coords = [batch_qc._java["Double"].NaN, batch_qc._java["Double"].NaN]
 	
 	if Dialog.reportType == "pp":
