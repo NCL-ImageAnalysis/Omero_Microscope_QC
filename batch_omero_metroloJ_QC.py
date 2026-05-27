@@ -93,8 +93,9 @@ def attach_results(image, output_directory, connection, method, clear_local_outp
 @click.option("--save_images/--no_save_images", default=True, help="Whether to save the MetroloJ output images and attach to OMERO.")
 @click.option("--clear_local_output", default=False, is_flag=True, help="Whether to clear the local output directory after processing each image.")
 @click.option("--memory", default="6g", type=str, help="Amount of memory to allocate to Fiji (e.g. '6g' for 6 gigabytes).")
+@click.option("--debug/--no_debug", default=False, help="Whether to run in debug mode, which will print full tracebacks.")
 
-def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accuracy_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, clear_local_output, memory):
+def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accuracy_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, clear_local_output, memory, debug):
 	with open(config_path, "r") as f:
 		config = json.load(f)
 	omero_hostname = config["hostname"]
@@ -136,28 +137,29 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	print(f"Drift: {len([image for image in to_process if image.parent.name == drift_name])}")
 	print(f"Z-Accuracy: {len([image for image in to_process if image.parent.name == z_accuracy_name])}")
 
-	for image in to_process:
+	for index, image in enumerate(to_process):
 		try:
 			try:
 				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name)
-			except ConnectionError or Ice.ConnectionLostException:
+			except (ConnectionError, Ice.ConnectionLostException):
 				print("Connection to OMERO server lost. Attempting to reconnect and retry...")
 				conn = batch_qc.omero_images.connect(*conn_params)
-				image.reload(conn)
+				[image.reload(conn) for image in to_process[index:]]
 				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name)
 				if method is None:
 					image.close()
 					continue  # Skip attaching results if analysis was not run due to missing ROIs
 			try:
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
-			except ConnectionError or Ice.ConnectionLostException:
+			except (ConnectionError, Ice.ConnectionLostException):
 				print("Connection to OMERO server lost while attaching results. Attempting to reconnect and retry...")
 				conn = batch_qc.omero_images.connect(*conn_params)
-				image.reload(conn)
+				[image.reload(conn) for image in to_process[index:]]
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 		except Exception as e:
 			print(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}")
-			traceback.print_exc()
+			if debug:
+				traceback.print_exc()
 		finally:
 			image.close()
 
