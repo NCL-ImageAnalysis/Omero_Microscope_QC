@@ -52,13 +52,13 @@ def initialize_MetroloJDialog(method,
 		
 	if method == "psf":
 		if not image.size_z > 1:
-			raise ValueError(f"Image {image.name} (ID: {image.id}) requires a Z stack for {method} analysis but sizeZ is {image.sizeZ}.")	
+			raise ValueError(f"Image {image.name} (ID: {image.id}) requires a Z stack for {method} analysis but sizeZ is {image.size_z}.")	
 	elif method == "registration":
 		if not (image.size_c > 1 and image.size_z > 1):
-			raise ValueError(f"Image {image.name} (ID: {image.id}) requires a multi-channel Z stack for co-registration analysis but sizeC is {image.sizeC} and sizeZ is {image.sizeZ}.")
+			raise ValueError(f"Image {image.name} (ID: {image.id}) requires a multi-channel Z stack for co-registration analysis but sizeC is {image.size_c} and sizeZ is {image.size_z}.")
 	elif method == "drift":
 		if not image.size_t > 1:
-			raise ValueError(f"Image {image.name} (ID: {image.id}) requires a time series for drift analysis but sizeT is {image.sizeT}.")
+			raise ValueError(f"Image {image.name} (ID: {image.id}) requires a time series for drift analysis but sizeT is {image.size_t}.")
 
 	image_plus = image.image_plus
 	if image_plus is None:

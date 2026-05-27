@@ -161,7 +161,7 @@ def run_z_accuracy(input_image,
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	
 	if not input_image.size_z > 1:
-			raise ValueError(f"Image {input_image.name} (ID: {input_image.id}) requires a Z stack for z accuracy analysis but sizeZ is {input_image.sizeZ}.")
+			raise ValueError(f"Image {input_image.name} (ID: {input_image.id}) requires a Z stack for z accuracy analysis but sizeZ is {input_image.size_z}.")
 	
 	# This section sets the measurements that will be used
 	AnalyzerClass = batch_qc._java["Analyzer"]()
