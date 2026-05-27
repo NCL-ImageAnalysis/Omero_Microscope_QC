@@ -34,7 +34,7 @@ from ij.plugin.filter import Analyzer, AVI_Writer
 from loci.plugins import BF
 from loci.plugins.in import ImporterOptions
 
-def analyzeParticles(Binary_Image):
+def analyzeParticles(Binary_Image, exclude_on_edge):
 	"""Runs analyze particles on the binary image, returning the ROI
 
 	Args:
@@ -47,7 +47,10 @@ def analyzeParticles(Binary_Image):
 	# Defines analyse particles settings
 	# Runs the analyze particles command to get ROI. 
 	# Done by adding to the overlay in order to not have ROIManger shown to user
-	RoiList = IJ.run(Binary_Image, "Analyze Particles...", "exclude clear add")
+	if exclude_on_edge:
+		RoiList = IJ.run(Binary_Image, "Analyze Particles...", "exclude clear add")
+	else:
+		RoiList = IJ.run(Binary_Image, "Analyze Particles...", "include clear add")
 	# Gets the Overlayed ROIs from analyze particles
 	Overlayed_Rois = Binary_Image.getOverlay()
 	# Takes the overlay and turns it into an array of ROI
@@ -103,12 +106,10 @@ def crop_points(img, xy, cropsize, saveto, filename, index):
 	# Thresholds the image to get the ladder
 	IJ.setThreshold(CropProject, bg*5, maxi)
 	IJ.run(CropProject, "Convert to Mask", "")
-	RoiList = analyzeParticles(CropProject)
+	RoiList = analyzeParticles(CropProject, False)
 	if len(RoiList) == 1:
-		out.show()
 		writer = AVI_Writer()
 		outpath = saveto+"\\"+filename+"_"+str(index+1)+".avi"
-		print(outpath)
 		writer.writeImage(out, outpath, AVI_Writer.NO_COMPRESSION, 0)
 
 def main(input_image, output_directory, cropsize_um):
@@ -133,7 +134,6 @@ def main(input_image, output_directory, cropsize_um):
 	Options.setAutoscale(True)
 	Imp = BF.openImagePlus(Options)[0]
 	Projected = ZProjector.run(Imp, "max")
-	#print(Projected.getDimensions())
 	# calculate desired crop size in pixels
 	cropsize_px = int(Projected.getCalibration().getRawX(cropsize_um))
 	mask = Projected.duplicate()
@@ -150,7 +150,7 @@ def main(input_image, output_directory, cropsize_um):
 	IJ.setThreshold(mask, bg*5, maxi)
 	IJ.run(mask, "Convert to Mask", "")
 	AnalyzerClass.setMeasurements(Measurements.CENTROID)
-	RoiList = analyzeParticles(mask)
+	RoiList = analyzeParticles(mask, True)
 	#RoiList = IJ.run(mask, "Analyze Particles...", "exclude clear add");
 	# String needed to get the centroid of the ROI
 	CentroidString = ["X", "Y"]
@@ -160,7 +160,6 @@ def main(input_image, output_directory, cropsize_um):
 		Centroid = getRoiMeasurements(ThisRoi, mask, CentroidString)
 		# Must be a tuple to be hashable in dictionary
 		PointList.append(tuple(Centroid))
-	#print(PointList)
 	for i in range(len(PointList)):
 		crop_points(Imp, PointList[i], cropsize_px, OutputPath, FileNameNoExtension, i)
 
