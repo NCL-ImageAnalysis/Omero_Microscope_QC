@@ -7,6 +7,7 @@ import click
 import pathlib
 import shutil
 import Ice
+import traceback
 
 DEFAULT_CONFIG_PATH= pathlib.Path(__file__).resolve().parent / ".omero_config"
 
@@ -30,6 +31,7 @@ def run_analysis(image, output_directory, to_method_name, thresholding_method, c
 	dataset_name = image.parent.name
 	image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
 	image_output_directory.mkdir(parents=True, exist_ok=True)
+	
 	if Bool_or_Missing(image.key_value_pairs, "use_rois"):
 		if len(image.rois) == 0:
 			print(f"Skipping image {image.name} (ID: {image.id}) as marked as using ROIs but no ROIs found.")
@@ -155,6 +157,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 		except Exception as e:
 			print(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}")
+			traceback.print_exc()
 		finally:
 			image.close()
 
