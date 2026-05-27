@@ -105,8 +105,6 @@ class OmeroObject:
 		self.core = connection.getObject(self.omero_class, self.id)
 		if self.children:
 			[child.reload(connection) for child in self.children]
-		if self.parent:
-			self.parent.reload(connection)
 
 class ParentObject(OmeroObject):
 	def __init__(self, omero_entity, parent=None):
