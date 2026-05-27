@@ -49,6 +49,16 @@ def initialize_MetroloJDialog(method,
 			pinhole_size = float(image.key_value_pairs["pinhole_size_AU"])
 		except KeyError:
 			raise KeyError("Pinhole size not found in image key value pairs. Please ensure that the image has a key 'pinhole_size_AU' with the pinhole size in AU as the value.")
+		
+	if method == "psf":
+		if not image.sizeZ > 1:
+			raise ValueError(f"Image {image.name} (ID: {image.id}) requires a Z stack for {method} analysis but sizeZ is {image.sizeZ}.")	
+	elif method == "registration":
+		if not (image.sizeC > 1 and image.sizeZ > 1):
+			raise ValueError(f"Image {image.name} (ID: {image.id}) requires a multi-channel Z stack for co-registration analysis but sizeC is {image.sizeC} and sizeZ is {image.sizeZ}.")
+	elif method == "drift":
+		if not image.sizeT > 1:
+			raise ValueError(f"Image {image.name} (ID: {image.id}) requires a time series for drift analysis but sizeT is {image.sizeT}.")
 
 	image_plus = image.image_plus
 	if image_plus is None:
