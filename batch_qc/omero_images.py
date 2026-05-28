@@ -112,7 +112,7 @@ class ParentObject(OmeroObject):
 		self.children = [OmeroObject.from_omero_entity(child, parent=self) for child in omero_entity.listChildren()]
 
 class ImageObject(OmeroObject):
-	def __init__(self, image, load_data=False, parent=None):
+	def __init__(self, image, load_data=False, parent=None, reload=False):
 		super().__init__(image, parent=parent)
 		self.children = None
 		self.size_x = image.getSizeX()
@@ -131,11 +131,16 @@ class ImageObject(OmeroObject):
 		self.NA = self.objective.getObjective().getLensNA()
 		self.channels = [ChannelObject(ch) for ch in image.getChannels()]
 		self.shape = (self.size_t, self.size_c, self.size_z, self.size_y, self.size_x)
-		self.image_data = None
-		self.image_plus = None
 		self.rois = [RoiObject(roi, parent=self) for roi in image.getROIs()]
+		if not reload:
+			self.image_data = None
+			self.image_plus = None
 		if load_data:
 			self.load_image_data()
+
+	def reload(self, connection):
+		super().reload(connection)
+		self.__init__(self.core, parent=self.parent, reload=True)
 
 	def load_image_data(self, c=None, t=None, z=None, tile=None):
 		if c is None:
