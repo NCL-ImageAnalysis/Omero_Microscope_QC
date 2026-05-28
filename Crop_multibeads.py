@@ -34,6 +34,16 @@ from ij.plugin.filter import Analyzer, AVI_Writer
 from loci.plugins import BF
 from loci.plugins.in import ImporterOptions
 
+def open_image(input_image):
+	# Imports the image using Bioformats-------------------v
+	Options = ImporterOptions()
+	Options.setId(input_image.getPath())
+	# Ensures that the image is not split into focal planes
+	Options.setSplitFocalPlanes(False)
+	Options.setAutoscale(True)
+	Imp = BF.openImagePlus(Options)[0]
+	return(Imp)
+
 def analyzeParticles(Binary_Image, exclude_on_edge):
 	"""Runs analyze particles on the binary image, returning the ROI
 
@@ -48,9 +58,9 @@ def analyzeParticles(Binary_Image, exclude_on_edge):
 	# Runs the analyze particles command to get ROI. 
 	# Done by adding to the overlay in order to not have ROIManger shown to user
 	if exclude_on_edge:
-		RoiList = IJ.run(Binary_Image, "Analyze Particles...", "exclude clear add")
+		RoiList = IJ.run(Binary_Image, "Analyze Particles...", "exclude overlay")
 	else:
-		RoiList = IJ.run(Binary_Image, "Analyze Particles...", "include clear add")
+		RoiList = IJ.run(Binary_Image, "Analyze Particles...", "include overlay")
 	# Gets the Overlayed ROIs from analyze particles
 	Overlayed_Rois = Binary_Image.getOverlay()
 	# Takes the overlay and turns it into an array of ROI
@@ -91,12 +101,12 @@ def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
 	Image.resetRoi()
 	return OutputList
 	
-def crop_points(img, xy, cropsize, saveto, filename, index):
-	img.setRoi(int(xy[0])-(cropsize/2), int(xy[1])-(cropsize/2), cropsize, cropsize)
+def crop_points(img, xy, cropsize, cropsize_um):
+	img.setRoi(xy[0]-(cropsize/2), xy[1]-(cropsize/2), cropsize, cropsize)
 	out = img.crop("stack")
+	# check crop is square, not too near the edge
 	CropProject = ZProjector.run(out, "max")
-	bg = CropProject.getStatistics().mode
-	maxi = CropProject.getStatistics().max
+	dim = round((CropProject.getStatistics().area**0.5), 0)
 	# Gaussian blur image
 	blur = CropProject.getProcessor()
 	gb = GaussianBlur()
@@ -104,79 +114,65 @@ def crop_points(img, xy, cropsize, saveto, filename, index):
 	CropProject.updateAndDraw()
 	# calculate treshold from background
 	# Thresholds the image to get the ladder
-	IJ.setThreshold(CropProject, bg*5, maxi)
+	IJ.setAutoThreshold(CropProject, "Otsu dark")
 	IJ.run(CropProject, "Convert to Mask", "")
 	RoiList = analyzeParticles(CropProject, False)
-	if len(RoiList) == 1:
-		writer = AVI_Writer()
-		outpath = saveto+"\\"+filename+"_"+str(index+1)+".avi"
-		writer.writeImage(out, outpath, AVI_Writer.NO_COMPRESSION, 0)
+	if len(RoiList) == 1 and dim == cropsize_um:
+		return(xy)
 
-def main(input_image, output_directory, cropsize_um):
-	# This section sets the measurements that will be used
-	AnalyzerClass = Analyzer()
-	# Gets original measurements to reset later
-	OriginalMeasurements = AnalyzerClass.getMeasurements()
-
-	# Sets the measurements to be used
-	AnalyzerClass.setMeasurements(Measurements.MODE)
-
-	# Gets the needed paths and filenames for input and output
+def write_out_file(img, xy, input_image, output_directory):
+	saveto = output_directory.getPath()
 	FileName = input_image.getName()
 	FileNameNoExtension = FileName.split(".")[0]
-	OutputPath = output_directory.getPath()
+	cropsize = xy[len(xy)-1]
+	xy = xy[0:(len(xy)-1)]
+	for xyi in range(len(xy)):
+		img.setRoi(xy[xyi][0]-(cropsize/2), xy[xyi][1]-(cropsize/2), cropsize, cropsize)
+		out = img.crop("stack")
+		writer = AVI_Writer()
+		outpath = saveto+"\\"+FileNameNoExtension +"_"+str(xyi+1)+".avi"
+		writer.writeImage(out, outpath, AVI_Writer.NO_COMPRESSION, 0)
 
-	# Imports the image using Bioformats-------------------v
-	Options = ImporterOptions()
-	Options.setId(input_image.getPath())
-	# Ensures that the image is not split into focal planes
-	Options.setSplitFocalPlanes(False)
-	Options.setAutoscale(True)
-	Imp = BF.openImagePlus(Options)[0]
+def main(Imp, output_directory, cropsize_um):
+	AnalyzerClass = Analyzer()
 	Projected = ZProjector.run(Imp, "max")
 	# calculate desired crop size in pixels
 	cropsize_px = int(Projected.getCalibration().getRawX(cropsize_um))
-	mask = Projected.duplicate()
-	mask.removeScale()
-	bg = mask.getStatistics().mode
-	maxi = mask.getStatistics().max
+	Projected.removeScale()
 	# Gaussian blur image
-	blur = mask.getProcessor()
+	blur = Projected.getProcessor()
 	gb = GaussianBlur()
 	gb.blurGaussian(blur, 2.0)
-	mask.updateAndDraw()
+	Projected.updateAndDraw()
 	# calculate treshold from background
 	# Thresholds the image to get the ladder
-	IJ.setThreshold(mask, bg*5, maxi)
-	IJ.run(mask, "Convert to Mask", "")
+	IJ.setAutoThreshold(Projected, "Otsu dark")
+	IJ.run(Projected, "Convert to Mask", "")
 	AnalyzerClass.setMeasurements(Measurements.CENTROID)
-	RoiList = analyzeParticles(mask, True)
-	#RoiList = IJ.run(mask, "Analyze Particles...", "exclude clear add");
+	RoiList = analyzeParticles(Projected, True)
 	# String needed to get the centroid of the ROI
 	CentroidString = ["X", "Y"]
 	# Gets the centroid of each ROI and adds to a list-------------------v
 	PointList = []
+	FilteredPointList = []
 	for ThisRoi in RoiList:
-		Centroid = getRoiMeasurements(ThisRoi, mask, CentroidString)
+		Centroid = tuple(getRoiMeasurements(ThisRoi, Projected, CentroidString))
+		Centroid = tuple([int(x) if isinstance(x, float) else x for x in Centroid])
 		# Must be a tuple to be hashable in dictionary
-		PointList.append(tuple(Centroid))
+		PointList.append(Centroid)
+	Projected.close()
 	for i in range(len(PointList)):
-		crop_points(Imp, PointList[i], cropsize_px, OutputPath, FileNameNoExtension, i)
+		goodpoint = crop_points(Imp, PointList[i], cropsize_px, cropsize_um)
+		if goodpoint is not None:
+			FilteredPointList.append(goodpoint)
+	FilteredPointList.append(cropsize_px)
+	return(FilteredPointList)
+	Imp.close()
 
 	#--------------------------------------------------------------------^
-if __name__ == "__main__":
-	main(InputImage, OutputDirectory, 6)
-	
-# pseudocode
+picture = open_image(InputImage)
 
-#1MIP
-#2gaussian blur radius 2
-#3threshold default, mode*5-max
-#4set measurement to include centroid
-#5analyse particles, exclude on edges
-#6Add 6x6 µm square ROI at each position
-#7Crop image to each ROI 
-# repeat 1-3
-# analyse particles, don't exclude on edges
-# if >1 particle, dump this image
-# save remaining images
+if __name__ == "__main__":
+	out = main(picture, OutputDirectory, 15)
+	
+write_out_file(picture, out, InputImage, OutputDirectory)
