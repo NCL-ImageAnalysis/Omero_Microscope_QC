@@ -182,10 +182,11 @@ class ImageObject(OmeroObject):
 		CalibrationObj = batch_qc._java["Calibration"]()
 		CalibrationObj.setXUnit(str(self.scale_x.getUnit()))
 		CalibrationObj.setYUnit(str(self.scale_y.getUnit()))
-		CalibrationObj.setZUnit(str(self.scale_z.getUnit()))
 		CalibrationObj.pixelWidth = float(self.scale_x.getValue())
 		CalibrationObj.pixelHeight = float(self.scale_y.getValue())
-		CalibrationObj.pixelDepth = float(self.scale_z.getValue())
+		if self.scale_z:
+			CalibrationObj.setZUnit(str(self.scale_z.getUnit()))
+			CalibrationObj.pixelDepth = float(self.scale_z.getValue())
 		image_plus.setCalibration(CalibrationObj)
 		self.image_plus = image_plus
 		return image_plus
