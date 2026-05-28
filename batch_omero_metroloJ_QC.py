@@ -8,6 +8,7 @@ import pathlib
 import shutil
 import Ice
 import traceback
+import logging
 
 DEFAULT_CONFIG_PATH= pathlib.Path(__file__).resolve().parent / ".omero_config"
 
@@ -79,6 +80,17 @@ def attach_results(image, output_directory, connection, method, clear_local_outp
 		shutil.rmtree(output_directory)
 	print(f"Finished processing image {image.name} (ID: {image.id}).")
 
+def reconnect_and_reload(image_list, connection_parameters, current_connection=None):
+	if current_connection is not None:
+		try:
+			current_connection.close()
+		except Exception:
+			pass
+	conn = batch_qc.omero_images.connect(*connection_parameters)
+	for image in image_list:
+		image.reload(conn)
+	return conn
+
 @click.command()
 @click.argument("output_directory", type=click.Path(file_okay=False, writable=True), default=".")
 @click.option("--config_path", default=DEFAULT_CONFIG_PATH, type=click.Path(exists=True), help="Path to JSON config file containing OMERO connection details and Fiji path.")
@@ -103,6 +115,9 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	omero_password = config["password"]
 	fiji_path = config["fiji_path"]
 
+	if not debug:
+		logging.getLogger("omero.gateway").setLevel(logging.CRITICAL)
+
 	conn_params = (omero_hostname, omero_username, omero_password)
 	try:
 		conn = batch_qc.omero_images.connect(*conn_params)
@@ -112,6 +127,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	
 	if not pathlib.Path(fiji_path).is_dir():
 		print(f"Fiji path {fiji_path} is not a directory. Please check the path in the config file.")
+		conn.close()
 		return
 	
 	print ("Initialising Fiji...")
@@ -119,6 +135,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 		batch_qc.initialise(fiji_path, mode="interactive", memory=memory)
 	except RuntimeError as e:
 		print(f"Failed to initialise Fiji. Please check the Fiji path and ensure it is correct.")
+		conn.close()
 		return
 	print("Fiji initialised successfully.")
 	
@@ -143,8 +160,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name)
 			except (ConnectionError, Ice.ConnectionLostException):
 				print("Connection to OMERO server lost. Attempting to reconnect and retry...")
-				conn = batch_qc.omero_images.connect(*conn_params)
-				[image.reload(conn) for image in to_process[index:]]
+				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
 				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name)
 				if method is None:
 					image.close()
@@ -153,8 +169,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 			except (ConnectionError, Ice.ConnectionLostException):
 				print("Connection to OMERO server lost while attaching results. Attempting to reconnect and retry...")
-				conn = batch_qc.omero_images.connect(*conn_params)
-				[image.reload(conn) for image in to_process[index:]]
+				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 		except Exception as e:
 			print(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}")
@@ -165,7 +180,10 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 
 		if clear_local_output:
 			clear_empty_directories(output_directory)
-	conn.close()
+	try:
+		conn.close()
+	except Exception:
+		pass
 
 if __name__ == "__main__":
 	main()
