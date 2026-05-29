@@ -1,52 +1,46 @@
 import batch_qc
 from batch_qc.imagej_utils import *
-	
-def crop_points(img, xy, cropsize, cropsize_um):
-	img.setRoi(xy[0]-(cropsize/2), xy[1]-(cropsize/2), cropsize, cropsize)
-	out = img.crop("stack")
-	# check crop is square, not too near the edge
-	CropProject = batch_qc._java["ZProjector"].run(out, "max")
-	dim = round((CropProject.getStatistics().area**0.5), 0)
-	# Gaussian blur image
-	blur = CropProject.getProcessor()
-	gb = batch_qc._java["GaussianBlur"]()
-	gb.blurGaussian(blur, 2.0)
-	CropProject.updateAndDraw()
-	# calculate treshold from background
-	# Thresholds the image to get the ladder
-	batch_qc._java["IJ"].setAutoThreshold(CropProject, "Otsu dark")
-	batch_qc._java["IJ"].run(CropProject, "Convert to Mask", "")
-	RoiList = analyzeParticles(CropProject, False)
-	if len(RoiList) == 1 and dim == cropsize_um:
-		return(xy)
 
-def main(Imp, cropsize_um):
+def getProjectedBeads(Imp, exclude_edges=True):
 	Projected = batch_qc._java["ZProjector"].run(Imp, "max")
-	# calculate desired crop size in pixels
-	cropsize_px = int(Projected.getCalibration().getRawX(cropsize_um))
-	Projected.removeScale()
 	# Gaussian blur image
-	blur = Projected.getProcessor()
-	gb = batch_qc._java["GaussianBlur"]()
-	gb.blurGaussian(blur, 2.0)
-	Projected.updateAndDraw()
-	# calculate treshold from background
+	batch_qc._java["IJ"].run(Projected, "Gaussian Blur...", "sigma=2")
 	# Thresholds the image to get the ladder
 	batch_qc._java["IJ"].setAutoThreshold(Projected, "Otsu dark")
 	batch_qc._java["IJ"].run(Projected, "Convert to Mask", "")
-	RoiList = analyzeParticles(Projected)
+	RoiList = analyzeParticles(Projected, exclude_edges)
+	Projected.close()
+	return RoiList
+	
+def crop_points(img, xy, crop_width, crop_height):
+	img.setRoi(xy[0]-(crop_width/2), xy[1]-(crop_height/2), crop_width, crop_height)
+	out = img.crop("stack")
+	if crop_width != out.getWidth() or crop_height != out.getHeight():
+		return None
+	RoiList = getProjectedBeads(out, exclude_edges=False)
+	out.close()
+	if len(RoiList) == 1:
+		return xy
+
+def main(Imp, scaled_width, scaled_height):
+	# calculate desired crop size in pixels
+	Calibration = Imp.getCalibration()
+	width_px = round(Calibration.getRawX(scaled_width))
+	height_px = round(Calibration.getRawY(scaled_height))
+
+	RoiList = getProjectedBeads(Imp)
 	# String needed to get the centroid of the ROI
 	CentroidString = ["X", "Y"]
 	# Gets the centroid of each ROI and adds to a list-------------------v
 	PointList = []
 	FilteredPointList = []
+	NoScale = Imp.crop()
+	NoScale.removeScale()
 	for ThisRoi in RoiList:
-		Centroid_dict = getRoiMeasurements(ThisRoi, Projected, batch_qc._java["Measurements"].CENTROID)
-		PointList.append((round(Centroid_dict["X"]), round(Centroid_dict["Y"])))
-	Projected.close()
-	for i in range(len(PointList)):
-		goodpoint = crop_points(Imp, PointList[i], cropsize_px, cropsize_um)
+		Centroid_dict = getRoiMeasurements(ThisRoi, NoScale, batch_qc._java["Measurements"].CENTROID)
+		goodpoint = crop_points(Imp, [round(Centroid_dict["X"]), round(Centroid_dict["Y"])], width_px, height_px)
 		if goodpoint is not None:
+			goodpoint += [width_px, height_px]
 			FilteredPointList.append(goodpoint)
-	FilteredPointList.append(cropsize_px)
+	NoScale.close()
 	return(FilteredPointList)
