@@ -2,7 +2,7 @@ from .metroloJ_access import *
 from .omero_images import *	
 from .z_accuracy import *
 from .imagej_utils import *
-from .crop_multibeads import *
+# from .crop_multibeads import *
 
 import imagej
 import scyjava
@@ -32,7 +32,9 @@ _JAVA_CLASSES = {
 	"ResultsTable": "ij.measure.ResultsTable",
 	"ZProjector": "ij.plugin.ZProjector",
 	"Analyzer": "ij.plugin.filter.Analyzer",
-	"NoSuchFileException": "java.nio.file.NoSuchFileException"
+	"NoSuchFileException": "java.nio.file.NoSuchFileException",
+	"Slicer": "ij.plugin.Slicer",
+	"MaximumFinder": "ij.plugin.filter.MaximumFinder"
 }
 
 def initialise(*args, memory=None, **kwargs):
