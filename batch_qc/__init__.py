@@ -2,7 +2,6 @@ from .metroloJ_access import *
 from .omero_images import *	
 from .z_accuracy import *
 from .imagej_utils import *
-# from .crop_multibeads import *
 
 import imagej
 import scyjava
