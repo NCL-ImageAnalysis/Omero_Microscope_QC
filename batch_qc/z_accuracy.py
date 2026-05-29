@@ -134,9 +134,10 @@ def run_z_accuracy(input_image,
 	results = pd.DataFrame({"X": polygon.xpoints[:polygon.npoints], "Y": polygon.ypoints[:polygon.npoints]})
 	results["AxialStep"] = results["Y"] * 0.05
 	results = results.sort_values(by="X")
+	results = results.reset_index(drop=True)
 	results["AxialDiff"] = results["AxialStep"] - results["AxialStep"].shift(1)
 	results["AxialDiff"] = results["AxialDiff"].abs()
-	results.at[1, "AxialDiff"] = 0
+	results.at[0, "AxialDiff"] = 0
 	# Saves the results table
 	results.to_csv(os.path.join(OutputPath, f"{FileNameNoExtension}{save_suffix}_XZ.csv"), index=False)
 
