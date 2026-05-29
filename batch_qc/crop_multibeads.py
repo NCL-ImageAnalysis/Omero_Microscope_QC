@@ -22,7 +22,7 @@ def crop_points(img, xy, crop_width, crop_height):
 	if len(RoiList) == 1:
 		return xy
 
-def main(Imp, scaled_width, scaled_height):
+def get_crop_roi_params(Imp, scaled_width, scaled_height):
 	# calculate desired crop size in pixels
 	Calibration = Imp.getCalibration()
 	width_px = round(Calibration.getRawX(scaled_width))
@@ -32,12 +32,11 @@ def main(Imp, scaled_width, scaled_height):
 	# String needed to get the centroid of the ROI
 	CentroidString = ["X", "Y"]
 	# Gets the centroid of each ROI and adds to a list-------------------v
-	PointList = []
 	FilteredPointList = []
 	NoScale = Imp.crop()
 	NoScale.removeScale()
 	for ThisRoi in RoiList:
-		Centroid_dict = getRoiMeasurements(ThisRoi, NoScale, batch_qc._java["Measurements"].CENTROID)
+		Centroid_dict = getRoiMeasurements(ThisRoi, NoScale, [batch_qc._java["Measurements"].CENTROID])
 		goodpoint = crop_points(Imp, [round(Centroid_dict["X"]), round(Centroid_dict["Y"])], width_px, height_px)
 		if goodpoint is not None:
 			goodpoint += [width_px, height_px]
