@@ -200,6 +200,13 @@ class ImageObject(OmeroObject):
 		roi.setImage(self.core._obj)
 		conn.getUpdateService().saveObject(roi)
 		self.rois = [RoiObject(roi, parent=self) for roi in self.core.getROIs()]
+
+	def generate_bead_rois(self, scaled_width, scaled_height, conn):
+		if self.image_plus is None:
+			self.generate_ImagePlus()
+		rois = batch_qc.imagej_utils.get_crop_roi_params(self.image_plus, scaled_width, scaled_height)
+		for roi in rois:
+			self.add_roi(conn, *roi)
 		
 	def close(self):
 		if self.image_plus is not None:
