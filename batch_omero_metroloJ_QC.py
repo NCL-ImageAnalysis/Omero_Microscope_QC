@@ -27,16 +27,31 @@ def clear_empty_directories(path):
 		if root != path and not any(path.iterdir()):
 			root.rmdir()
 
-def run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name):
+def run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name, conn):
 	project_name = image.parent.parent.name
 	dataset_name = image.parent.name
 	image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
 	image_output_directory.mkdir(parents=True, exist_ok=True)
 
-	if Bool_or_Missing(image.key_value_pairs, "use_rois"):
+	generate_rois = Bool_or_Missing(image.key_value_pairs, "generate_rois")
+	if Bool_or_Missing(image.key_value_pairs, "use_rois") or generate_rois:
 		if len(image.rois) == 0:
-			print(f"Skipping image {image.name} (ID: {image.id}) as marked as using ROIs but no ROIs found.")
-			return None, None
+			if generate_rois:
+				print(f"Generating ROIs for image {image.name} (ID: {image.id}).")
+				try:
+					crop_size = float(image.key_value_pairs["crop_size"])
+				except KeyError:
+					raise KeyError("Crop size not found in image key value pairs. Please ensure that the image has a key 'crop_size' with the desired crop size in scaled units as the value.")
+				except ValueError:
+					raise ValueError("'crop_size' value is not a valid number.")
+				image.generate_bead_rois(crop_size, crop_size, conn)
+				if len(image.rois) == 0:
+					print(f"Failed to generate ROIs for image {image.name} (ID: {image.id}). Skipping analysis for this image.")
+					return None, None			
+			else:
+				print(f"Skipping image {image.name} (ID: {image.id}) as marked as using ROIs but no ROIs found.")
+				print(f"To generate ROIs for this image, add a key 'generate_rois' with value 'True' to the image key value pairs and ensure there is a key 'crop_size' with the desired crop size in scaled units as the value.")
+				return None, None
 		roi_list = image.rois
 	else:
 		roi_list = [None]
@@ -157,11 +172,11 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	for index, image in enumerate(to_process):
 		try:
 			try:
-				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name)
+				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name, conn)
 			except (ConnectionError, Ice.ConnectionLostException):
 				print("Connection to OMERO server lost. Attempting to reconnect and retry...")
 				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
-				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name)
+				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name, conn)
 				if method is None:
 					image.close()
 					continue  # Skip attaching results if analysis was not run due to missing ROIs
