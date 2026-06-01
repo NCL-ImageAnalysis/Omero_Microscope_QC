@@ -230,14 +230,15 @@ def getProjectedBeads(Imp, exclude_edges=True):
 	return RoiList
 	
 def crop_points(img, xy, crop_width, crop_height):
-	img.setRoi(xy[0]-(crop_width/2), xy[1]-(crop_height/2), crop_width, crop_height)
+	roi_params = (round(xy[0]-(crop_width/2)), round(xy[1]-(crop_height/2)), crop_width, crop_height)
+	img.setRoi(*roi_params)
 	out = img.crop("stack")
 	if crop_width != out.getWidth() or crop_height != out.getHeight():
 		return None
 	RoiList = getProjectedBeads(out, exclude_edges=False)
 	out.close()
 	if len(RoiList) == 1:
-		return xy
+		return roi_params
 
 def get_crop_roi_params(Imp, scaled_width, scaled_height):
 	# calculate desired crop size in pixels
@@ -256,7 +257,6 @@ def get_crop_roi_params(Imp, scaled_width, scaled_height):
 		Centroid_dict = getRoiMeasurements(ThisRoi, NoScale, [batch_qc._java["Measurements"].CENTROID])
 		goodpoint = crop_points(Imp, [round(Centroid_dict["X"]), round(Centroid_dict["Y"])], width_px, height_px)
 		if goodpoint is not None:
-			goodpoint += [width_px, height_px]
 			FilteredPointList.append(goodpoint)
 	NoScale.close()
 	return(FilteredPointList)
