@@ -1,5 +1,6 @@
 import json
 import sys
+import os
 sys.path.insert(0, "D:/GitDir/Batch_QC")
 import batch_qc
 from batch_qc import metroloJ_access, omero_objects, z_accuracy
@@ -32,6 +33,7 @@ def run_analysis(image, output_directory, to_method_name, thresholding_method, c
 	dataset_name = image.parent.name
 	image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
 	image_output_directory.mkdir(parents=True, exist_ok=True)
+	image_output_directory_str = str(image_output_directory) + os.path.sep
 
 	generate_rois = Bool_or_Missing(image.key_value_pairs, "generate_rois")
 	if Bool_or_Missing(image.key_value_pairs, "use_rois") or generate_rois:
@@ -75,12 +77,12 @@ def run_analysis(image, output_directory, to_method_name, thresholding_method, c
 				save_csv=save_csv, 
 				save_images=save_images)
 			print("Running metroloJ analysis...")
-			ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, str(image_output_directory), image.name + save_suffix, image.acquisition_date)
+			ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory_str, image.name + save_suffix, image.acquisition_date)
 
 		elif dataset_name == z_accuracy_name:
 			method = "z_accuracy"
 			print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
-			z_accuracy.run_z_accuracy(image, str(image_output_directory), save_suffix=save_suffix)
+			z_accuracy.run_z_accuracy(image, image_output_directory_str, save_suffix=save_suffix)
 		return method, image_output_directory
 
 def attach_results(image, output_directory, connection, method, clear_local_output=False):
@@ -120,7 +122,7 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 @click.option("--save_images/--no_save_images", default=True, help="Whether to save the MetroloJ output images and attach to OMERO.")
 @click.option("--clear_local_output", default=False, is_flag=True, help="Whether to clear the local output directory after processing each image.")
 @click.option("--memory", default="6g", type=str, help="Amount of memory to allocate to Fiji (e.g. '6g' for 6 gigabytes).")
-@click.option("--debug/--no_debug", default=False, help="Whether to run in debug mode, which will print full tracebacks.")
+@click.option("--debug", default=False, is_flag=True, help="Whether to run in debug mode, which will print full tracebacks.")
 
 def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accuracy_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, clear_local_output, memory, debug):
 	with open(config_path, "r") as f:
