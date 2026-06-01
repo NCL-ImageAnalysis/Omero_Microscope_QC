@@ -84,6 +84,16 @@ class OmeroObject:
 		map_annotation.save()
 		self.core.linkAnnotation(map_annotation)
 		self.update_annotations()
+	
+	def remove_key_value(self, conn, key):
+		for ann in self.annotations:
+			if ann.OMERO_TYPE == omero.model.MapAnnotationI:
+				ann_dict = dict(ann.getValue())
+				if key in ann_dict:
+					if len(ann_dict) > 1:
+						raise ValueError(f"Map annotation with id {ann.id} contains multiple key value pairs. Cannot remove key value pair without deleting entire annotation.")
+					conn.deleteObjects("MapAnnotation", [ann.id])
+		self.update_annotations()
 
 	def update_annotations(self):
 		self.annotations = [ann for ann in self.core.listAnnotations()]
