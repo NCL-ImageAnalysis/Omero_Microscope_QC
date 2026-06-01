@@ -1,4 +1,3 @@
-import re
 import batch_qc
 
 def analyzeParticles(
@@ -132,91 +131,6 @@ def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
 	# Clears the roi from the image
 	Image.resetRoi()
 	return OutputDict
-
-
-def distanceBetweenPoints(X1, Y1, X2, Y2):
-	"""Calculates the distance between two coordinates
-
-	Args:
-		X1 (float): Start X coordinate
-		Y1 (float): Start Y coordinate
-		X2 (float): End X coordinate
-		Y2 (float): End Y coordinate
-
-	Returns:
-		float: Distance between the two points
-	"""	
-	xdiff = X1 - X2
-	ydiff = Y1 - Y2
-	Distance = batch_qc._java["Math"].sqrt((xdiff*xdiff) + (ydiff*ydiff))
-	return Distance
-
-
-def closestPoint(Point, Point_List):
-	"""Finds the closest two points in a list of ROIs
-
-	Args:
-		Roi (ij.gui.Roi): Roi to compare distances to
-		RoiList (ij.gui.Roi[]): List of ROIs
-
-	Returns:
-		list: List of the two closest ROIs
-	"""	
-	MinDistance = float("Infinity")
-	MinPoint = (None, None)
-
-	for OtherPoint in Point_List:
-		Distance = distanceBetweenPoints(Point[0], Point[1], OtherPoint[0], OtherPoint[1])
-		if Distance < MinDistance:
-			MinDistance = Distance
-			MinPoint = OtherPoint
-	return MinPoint
-	
-
-def roundToBase(Number, Base):
-	"""Rounds the given number to the nearest multiple of the given base
-
-	Args:
-		Number (float): Number to be rounded
-		Base (int): Base to round to
-
-	Returns:
-		int: Rounded number
-	"""	
-	RoundedNumber = (Base * batch_qc._java["Math"].round(Number/Base))
-	return RoundedNumber
-
-
-def getAngleBetweenPoints(Point1, Point2):
-	"""Gets the angle between two points in degrees
-
-	Args:
-		Point1 (tuple): X and Y coordinates of first point
-		Point2 (tuple): X and Y coordinates of second point
-
-	Returns:
-		float: Angle between two points in degrees
-	"""	
-	Angle = batch_qc._java["Math"].toDegrees(batch_qc._java["Math"].atan2(Point2[1] - Point1[1], Point2[0] - Point1[0]))
-	return Angle
-
-
-def selectWindow(Pattern):
-	"""Selects the window with the given pattern in the title
-
-	Args:
-		Pattern (string): regex pattern to match
-
-	Returns:
-		boolean: Whether the given window was found and selected
-	"""	
-	TitleList = batch_qc._java["WindowManager"].getImageTitles()
-	for Title in TitleList:
-		Title = str(Title)
-		if re.match(Pattern, Title):
-			batch_qc._java["IJ"].selectWindow(Title)
-			return True
-	return False
 
 def getProjectedBeads(Imp, exclude_edges=True):
 	Projected = batch_qc._java["ZProjector"].run(Imp, "max")
