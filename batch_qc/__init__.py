@@ -1,5 +1,5 @@
 from .metroloJ_access import *
-from .omero_images import *	
+from .omero_objects import *	
 from .z_accuracy import *
 from .imagej_utils import *
 

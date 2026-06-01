@@ -2,7 +2,7 @@ import json
 import sys
 sys.path.insert(0, "D:/GitDir/Batch_QC")
 import batch_qc
-from batch_qc import omero_images, metroloJ_access, z_accuracy
+from batch_qc import metroloJ_access, omero_objects, z_accuracy
 import click
 import pathlib
 import shutil
@@ -86,7 +86,7 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 			current_connection.close()
 		except Exception:
 			pass
-	conn = batch_qc.omero_images.connect(*connection_parameters)
+	conn = batch_qc.omero_objects.connect(*connection_parameters)
 	for image in image_list:
 		image.reload(conn)
 	return conn
@@ -120,7 +120,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 
 	conn_params = (omero_hostname, omero_username, omero_password)
 	try:
-		conn = batch_qc.omero_images.connect(*conn_params)
+		conn = batch_qc.omero_objects.connect(*conn_params)
 	except ConnectionError:
 		print("Failed to connect to OMERO server. Please check your credentials and connection details.")
 		return
@@ -143,7 +143,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	to_method_name = {coreg_name: "registration", psf_name: "psf", drift_name: "drift"}
 
 	for microscope_project in conn.getObjects("Project"):
-		project = omero_images.OmeroObject.from_omero_entity(microscope_project)
+		project = omero_objects.OmeroObject.from_omero_entity(microscope_project)
 		for dataset in project.children:
 			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name]:
 				to_process += [image for image in dataset.children if not Bool_or_Missing(image.key_value_pairs, "QC_Processed")]
