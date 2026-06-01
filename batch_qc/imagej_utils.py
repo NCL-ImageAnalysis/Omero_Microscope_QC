@@ -155,6 +155,8 @@ def crop_points(img, xy, crop_width, crop_height):
 		return roi_params
 
 def get_crop_roi_params(Imp, scaled_width, scaled_height):
+	# Clearing any Rois as this can affect downstream processes
+	Imp.resetRoi()
 	# calculate desired crop size in pixels
 	Calibration = Imp.getCalibration()
 	width_px = round(Calibration.getRawX(scaled_width))
