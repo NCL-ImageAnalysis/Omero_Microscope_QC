@@ -6,6 +6,7 @@ import batch_qc
 
 import omero
 from omero import gateway
+from omero.rtypes import rdouble
 
 def connect(hostname, username, password, *, keep_alive=None, secure=None, port=None):
 	"""
@@ -166,9 +167,6 @@ class ImageObject(OmeroObject):
 		for i, pixel_values in enumerate(pixel_iterator):
 			indexes = all_iterations[i]
 			self.image_data[indexes[2], indexes[1], indexes[0], :, :] = np.array(pixel_values)
-		
-		# Swap X and Y axes to match ImageJ convention
-		self.image_data = np.moveaxis(self.image_data, 3, -1)
 	
 		self.image_data = xarray.DataArray(self.image_data, dims=["t", "c", "z", "y", "x"], name=self.name)
 		self.shape = self.image_data.shape
@@ -190,7 +188,19 @@ class ImageObject(OmeroObject):
 		image_plus.setCalibration(CalibrationObj)
 		self.image_plus = image_plus
 		return image_plus
-
+	
+	def add_roi(self, conn, x, y, width, height):
+		rect = omero.model.RectangleI()
+		rect.x = rdouble(x)
+		rect.y = rdouble(y)
+		rect.width = rdouble(width)
+		rect.height = rdouble(height)
+		roi = omero.model.RoiI()
+		roi.addShape(rect)
+		roi.setImage(self.core._obj)
+		conn.getUpdateService().saveObject(roi)
+		self.rois = [RoiObject(roi, parent=self) for roi in self.core.getROIs()]
+		
 	def close(self):
 		if self.image_plus is not None:
 			self.image_plus.close()
