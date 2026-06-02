@@ -250,3 +250,6 @@ class RoiObject(OmeroObject):
 		if self.parent is None:
 			raise RuntimeError("Roi does not have a parent image to load data from")
 		self.parent.load_image_data(c=c, t=t, z=z, tile=self.Tile)
+		if self.parent.image_plus is not None:
+			self.parent.image_plus.close()
+			self.parent.generate_ImagePlus()
