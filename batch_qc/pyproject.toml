@@ -1,0 +1,29 @@
+[project]
+name = "batch_qc"
+version = "0.0.1"
+authors = [
+  { name="James Grimshaw", email="james.grimshaw@ncl.ac.uk" },
+  { name="Nick Bailey", email="nick.bailey2@ncl.ac.uk" },
+  { name="George Merces", email="george.merces@ncl.ac.uk" }
+]
+description = "Used for running batch processing of microscope Quality Control images using MetroloJ and Omero"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: GPL-3.0-or-later",
+]
+dependencies = [
+	"pyimagej",
+	"omero-py",
+	"networkx",
+	"pandas"
+]
+
+[tool.setuptools]
+packages = ["batch_qc"]
+
+[project.urls]
+Homepage = "https://github.com/NCL-ImageAnalysis/Batch_QC"
+Issues = "https://github.com/NCL-ImageAnalysis/Batch_QC/issues"
