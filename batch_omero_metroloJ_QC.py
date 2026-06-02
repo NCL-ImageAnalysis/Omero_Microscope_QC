@@ -199,7 +199,11 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 		if clear_local_output:
 			clear_empty_directories(output_directory)
 	try:
+		print("All images processed. Closing connection to OMERO server.")
 		conn.close()
+		batch_qc._ij.dispose()
+		sys.exit(0)
+		os._exit(0)
 	except Exception:
 		pass
 
