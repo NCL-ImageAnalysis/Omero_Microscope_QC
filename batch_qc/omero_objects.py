@@ -243,8 +243,7 @@ class ImageObject(OmeroObject):
 
 	def reload(self, connection):
 		"Need own implementation of reload so reload param can be passed to __init__ to avoid having to redownload image data"
-		super().reload(connection)
-		self.__init__(self.core, parent=self.parent, reload=True)
+		self.__init__(connection.getObject(self.omero_class, self.id), parent=self.parent, reload=True)
 
 	def load_image_data(self, c=None, t=None, z=None, tile=None):
 		"""Loads image data into memory from the OMERO server. Can specify subsets of the data to load by providing channel, time and z-stack indices and/or tile coordinates.
