@@ -49,7 +49,7 @@ def get_feducial_points(df):
 		tuple: A tuple containing the start and end coordinates of the Z ladder line in the format (X1, Y1, X2, Y2)
 	"""
 	# Calculates the angle between each pair of points
-	df["angle"] = np.degrees(np.arctan((df["y1"] - df["y2"]) / (df["x1"] - df["x2"])))
+	df["angle"] = np.degrees(np.arctan2((df["y1"] - df["y2"]), (df["x1"] - df["x2"])))
 	# Means parallel lines will have the same angle even if they are in opposite directions.
 	df.loc[df["angle"] >= 180, "angle"] -= 180
 	# Rounds the angles to the nearest 10 degrees to find the most common angle
