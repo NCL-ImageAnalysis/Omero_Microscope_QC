@@ -180,7 +180,7 @@ def run_z_accuracy(input_image,
 	polygon = batch_qc._java["MaximumFinder"]().getMaxima(SlicedImp.getProcessor(), Prominence, False)
 
 	results = pd.DataFrame({"X": polygon.xpoints[:polygon.npoints], "Y": polygon.ypoints[:polygon.npoints]})
-	results["AxialStep"] = results["Y"] * 0.05
+	results["AxialStep"] = results["Y"] * float(input_image.scale_z.getValue())
 	results = results.sort_values(by="X")
 	results = results.reset_index(drop=True)
 	results["AxialDiff"] = results["AxialStep"] - results["AxialStep"].shift(1)
