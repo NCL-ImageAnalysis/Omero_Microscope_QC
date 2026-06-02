@@ -22,7 +22,7 @@ def clear_empty_directories(path):
 	if isinstance(path, str):
 		path = pathlib.Path(path)
 	for root, dirs, files in path.walk(top_down=False):
-		if root != path and not any(path.iterdir()):
+		if root != path and not any(root.iterdir()):
 			root.rmdir()
 
 def run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name, conn):
