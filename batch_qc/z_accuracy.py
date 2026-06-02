@@ -61,12 +61,12 @@ def get_feducial_points(df):
 	graph = nx.from_pandas_edgelist(df, source="point1", target="point2")
 	components = [list(c) for c in nx.connected_components(graph)]
 	# First node in the graph will be the start of the ladder and the last node will be the end of the ladder
-	feducial_start = df[df["point"] == components[0][0]].reset_index()
-	feducial_end = df[df["point"] == components[0][-1]].reset_index()
-	X1 = feducial_start["X"][0]
-	Y1 = feducial_start["Y"][0]
-	X2 = feducial_end["X"][0]
-	Y2 = feducial_end["Y"][0]
+	feducial_start = df[df["point1"] == components[0][0]].reset_index()
+	feducial_end = df[df["point1"] == components[0][-1]].reset_index()
+	X1 = feducial_start["x1"][0]
+	Y1 = feducial_start["y1"][0]
+	X2 = feducial_end["x2"][0]
+	Y2 = feducial_end["y2"][0]
 	return X1, Y1, X2, Y2
 
 def run_z_accuracy(input_image,
