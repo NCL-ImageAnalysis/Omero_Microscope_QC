@@ -179,9 +179,9 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 				print("Connection to OMERO server lost. Attempting to reconnect and retry...")
 				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
 				method, image_output_directory = run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name, conn)
-				if method is None:
-					image.close()
-					continue  # Skip attaching results if analysis was not run due to missing ROIs
+			if method is None:
+				image.close()
+				continue  # Skip attaching results if analysis was not run due to missing ROIs
 			try:
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 			except (ConnectionError, Ice.ConnectionLostException):
