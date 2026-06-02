@@ -10,8 +10,6 @@ import Ice
 import traceback
 import logging
 
-DEFAULT_CONFIG_PATH= pathlib.Path(__file__).resolve().parent / ".omero_config"
-
 def Bool_or_Missing(dict_item, key):
 	if key not in dict_item:
 		return False
@@ -110,7 +108,7 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 
 @click.command()
 @click.argument("output_directory", type=click.Path(file_okay=False, writable=True), default=".")
-@click.option("--config_path", default=DEFAULT_CONFIG_PATH, type=click.Path(exists=True), help="Path to JSON config file containing OMERO connection details and Fiji path.")
+@click.option("--config_path", type=click.Path(exists=True), required=True, help="Path to JSON config file containing OMERO connection details and Fiji path.")
 @click.option("--coreg_name", default="Coregistration", help="Name of datasets containing coregistration images to look for in OMERO.")
 @click.option("--psf_name", default="PSF", help="Name of datasets containing PSF images to look for in OMERO.")
 @click.option("--drift_name", default="Stage", help="Name of datasets containing drift images to look for in OMERO.")
