@@ -84,7 +84,7 @@ def run_analysis(image, output_directory, to_method_name, thresholding_method, c
 			method = "z_accuracy"
 			print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
 			z_accuracy.run_z_accuracy(image, image_output_directory_str, save_suffix=save_suffix)
-	return method, image_output_directory_str
+	return method, image_output_directory
 
 def attach_results(image, output_directory, connection, method, clear_local_output=False):
 	print("Attaching results to OMERO...")
