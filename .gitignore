@@ -8,8 +8,6 @@ batch_qc/__pycache__/imagej_utils.cpython-312.pyc
 batch_qc/__pycache__/metroloJ_access.cpython-310.pyc
 batch_qc/__pycache__/omero_images.cpython-310.pyc
 batch_qc/__pycache__/omero_objects.cpython-312.pyc
-batch_qc.egg-info/dependency_links.txt
-batch_qc.egg-info/PKG-INFO
-batch_qc.egg-info/requires.txt
-batch_qc.egg-info/SOURCES.txt
-batch_qc.egg-info/top_level.txt
+batch_qc.egg-info/
+build/
+
