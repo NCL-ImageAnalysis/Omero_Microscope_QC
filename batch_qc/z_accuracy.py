@@ -39,6 +39,36 @@ def closest_x_points(df, num_points=2, identifier_col="point"):
 				"y2": match["Y"]})
 	return pd.DataFrame(rows)
 
+def get_feducial_points(df):
+	"""Gets the start and end coordinates of one of the Z ladder lines
+
+	Args:
+		df (pandas.DataFrame): DataFrame containing paired points with columns "point1", "x1", "y1", "point2", "x2", "y2". This should be the output of closest_x_points function.
+
+	Returns:
+		tuple: A tuple containing the start and end coordinates of the Z ladder line in the format (X1, Y1, X2, Y2)
+	"""
+	# Calculates the angle between each pair of points
+	df["angle"] = np.degrees(np.arctan((df["y1"] - df["y2"]) / (df["x1"] - df["x2"])))
+	# Means parallel lines will have the same angle even if they are in opposite directions.
+	df.loc[df["angle"] >= 180, "angle"] -= 180
+	# Rounds the angles to the nearest 10 degrees to find the most common angle
+	df["angle"] = df["angle"].div(10).round(0) * 10
+	# Gets most common angle and filters the dataframe to only include pairs of points with this angle
+	mode_angle = df["angle"].mode().iloc[0]
+	df = df[df["angle"] == mode_angle]
+	# Creates a graph where each point is a node and there is an edge between points that are close to each other.
+	graph = nx.from_pandas_edgelist(df, source="point1", target="point2")
+	components = [list(c) for c in nx.connected_components(graph)]
+	# First node in the graph will be the start of the ladder and the last node will be the end of the ladder
+	feducial_start = df[df["point"] == components[0][0]].reset_index()
+	feducial_end = df[df["point"] == components[0][-1]].reset_index()
+	X1 = feducial_start["X"][0]
+	Y1 = feducial_start["Y"][0]
+	X2 = feducial_end["X"][0]
+	Y2 = feducial_end["Y"][0]
+	return X1, Y1, X2, Y2
+
 def run_z_accuracy(input_image,
 		output_directory, save_suffix=""):
 	"""Used to measure accuracy of the z stage using a z-stack image of an Argolite Z-ladder.
@@ -100,18 +130,13 @@ def run_z_accuracy(input_image,
 	df = pd.DataFrame(PointList, columns=["X", "Y"])
 	df["point"] = df.index
 
+	# Gets a dataframe with the closest 2 points for each point which will be used to find the coordinates of the start and end of the ladder
 	comparison_df = closest_x_points(df, num_points=2, identifier_col="point")
-
-	comparison_df["angle"] = np.degrees(np.arctan((comparison_df["y1"] - comparison_df["y2"]) / (comparison_df["x1"] - comparison_df["x2"])))
-	comparison_df.loc[comparison_df["angle"] >= 180, "angle"] -= 180
-	comparison_df["angle"] = comparison_df["angle"].div(10).round(0) * 10
-	comparison_df = comparison_df[comparison_df["angle"] == comparison_df["angle"].mode().iloc[0]]
-	graph = nx.from_pandas_edgelist(comparison_df, source="point1", target="point2")
-	components = [list(c) for c in nx.connected_components(graph)]
-	feducial_start = df[df["point"] == components[0][0]].reset_index()
-	feducial_end = df[df["point"] == components[0][-1]].reset_index()
-
-	FeducialLine = batch_qc._java["Line"](feducial_start["X"][0], feducial_start["Y"][0], feducial_end["X"][0], feducial_end["Y"][0])
+	# Gets the coordinates of the start and end of the ladder to act as a feducial line for the rest of the analysis
+	line_args = get_feducial_points(comparison_df)
+	
+	# Creates an ImageJ line roi 
+	FeducialLine = batch_qc._java["Line"](*line_args)
 	# This angle is not rounded as it is used to rotate the image
 	FeducialAngle = FeducialLine.getAngle()
 
