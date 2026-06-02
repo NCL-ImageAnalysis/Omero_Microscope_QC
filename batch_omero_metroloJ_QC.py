@@ -1,7 +1,6 @@
 import json
 import sys
 import os
-sys.path.insert(0, "D:/GitDir/Batch_QC")
 import batch_qc
 from batch_qc import metroloJ_access, omero_objects, z_accuracy
 import click
