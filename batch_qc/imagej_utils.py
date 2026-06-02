@@ -57,7 +57,7 @@ def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
 		Measurement_Options ([str]) or ([ij.measure.Measurements]): Measurements to be taken in the form of either strings of the column headings or ij.measure.Measurements integers
 
 	Returns:
-		[float]: Dictionary of measurements with column headings as titles
+		 dict: Dictionary of measurements with column headings as titles
 	"""	
 
 	if batch_qc._ij is None:
@@ -133,6 +133,15 @@ def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
 	return OutputDict
 
 def getProjectedBeads(Imp, exclude_edges=True):
+	"""Takes a bead image z-stack and returns the rois of beads from a max intensity projected image. 
+
+	Args:
+		Imp (ij.ImagePlus): Beads z-stack image
+		exclude_edges (bool, optional): Whether to exclude rois touching edges. Defaults to True.
+
+	Returns:
+		[ij.gui.Roi]: List of ROIs corresponding to the beads in the projected image
+	"""
 	Projected = batch_qc._java["ZProjector"].run(Imp, "max")
 	# Gaussian blur image
 	batch_qc._java["IJ"].run(Projected, "Gaussian Blur...", "sigma=2")
@@ -144,6 +153,17 @@ def getProjectedBeads(Imp, exclude_edges=True):
 	return RoiList
 	
 def crop_points(img, xy, crop_width, crop_height):
+	"""Crops an image around a given point and checks if there is a single bead in the cropped region.
+
+	Args:
+		img (ij.ImagePlus): Image to be cropped
+		xy (list): List of x and y coordinates to crop around in the form [x, y]
+		crop_width (int): Width of the crop region in pixels
+		crop_height (int): Height of the crop region in pixels
+
+	Returns:
+		tuple: The ROI parameters for the cropped region in the form (x, y, width, height) if there is a single bead in the region, otherwise None
+	"""
 	roi_params = (round(xy[0]-(crop_width/2)), round(xy[1]-(crop_height/2)), crop_width, crop_height)
 	img.setRoi(*roi_params)
 	out = img.crop("stack")
@@ -155,18 +175,28 @@ def crop_points(img, xy, crop_width, crop_height):
 		return roi_params
 
 def get_crop_roi_params(Imp, scaled_width, scaled_height):
+	"""Generates roi for single beads from a supplied bead image and returns a list of their defining parameters
+
+	Args:
+		Imp (ij.ImagePlus): Bead image
+		scaled_width (float): Width of the crop region in scaled units
+		scaled_height (float): Height of the crop region in scaled units
+
+	Returns:
+		_list_: List of tuples containing the parameters for ROIs corresponding to single beads in the image in the form (x, y, width, height)
+	"""
+
 	# Clearing any Rois as this can affect downstream processes
 	Imp.resetRoi()
-	# calculate desired crop size in pixels
+	# Calculate desired crop size in pixels
 	Calibration = Imp.getCalibration()
 	width_px = round(Calibration.getRawX(scaled_width))
 	height_px = round(Calibration.getRawY(scaled_height))
 
+	# Gets the rois of the beads in the projected image
 	RoiList = getProjectedBeads(Imp)
-	# String needed to get the centroid of the ROI
-	CentroidString = ["X", "Y"]
-	# Gets the centroid of each ROI and adds to a list-------------------v
 	FilteredPointList = []
+	# Need unscaled image so can get centroid in pixels not scaled units
 	NoScale = Imp.crop()
 	NoScale.removeScale()
 	for ThisRoi in RoiList:
@@ -174,5 +204,6 @@ def get_crop_roi_params(Imp, scaled_width, scaled_height):
 		goodpoint = crop_points(Imp, [round(Centroid_dict["X"]), round(Centroid_dict["Y"])], width_px, height_px)
 		if goodpoint is not None:
 			FilteredPointList.append(goodpoint)
+	# Close the no scale crop to free up memory
 	NoScale.close()
 	return(FilteredPointList)
