@@ -21,9 +21,10 @@ def Bool_or_Missing(dict_item, key):
 def clear_empty_directories(path):
 	if isinstance(path, str):
 		path = pathlib.Path(path)
-	for root, dirs, files in path.walk(top_down=False):
-		if root != path and not any(root.iterdir()):
-			root.rmdir()
+	for root, dirs, files in os.walk(path, top_down=False):
+		rootpath = pathlib.Path(root)
+		if rootpath != path and not any(rootpath.iterdir()):
+			rootpath.rmdir()
 
 def run_analysis(image, output_directory, to_method_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, z_accuracy_name, conn):
 	project_name = image.parent.parent.name
@@ -85,7 +86,7 @@ def run_analysis(image, output_directory, to_method_name, thresholding_method, c
 
 def attach_results(image, output_directory, connection, method, clear_local_output=False):
 	print("Attaching results to OMERO...")
-	for root, dirs, files in output_directory.walk():
+	for root, dirs, files in os.walk(output_directory, top_down=False):
 		for f in files:
 			image.attach_annotation(connection, str(root / f), f"qc.{method}")
 	image.add_key_values(connection, {"QC_Processed": "True"}, namespace="QC")
