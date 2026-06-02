@@ -154,7 +154,7 @@ def run_z_accuracy(input_image,
 	image_plus.setOverlay(None)
 
 	# Gets the centroid of the rotated line
-	LineCentroid = getRoiMeasurements(RotatedLineRoi, Projected, [batch_qc._java["Measurements"].CENTROID])
+	LineCentroid = getRoiMeasurements(RotatedLineRoi, image_plus, [batch_qc._java["Measurements"].CENTROID])
 
 	# Gets the width of the image
 	Width = image_plus.getWidth()
