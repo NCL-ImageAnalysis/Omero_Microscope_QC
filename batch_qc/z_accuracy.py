@@ -7,11 +7,55 @@ import numpy as np
 import batch_qc
 from batch_qc.imagej_utils import *
 
+def closest_x_points(df, num_points=2, identifier_col="point"):
+	"""Takes a pandas dataframe with X and Y coordinates for each point and returns a dataframe with the closest x points for each point.
+	This contains the index and coordinates of the original and matching points
+
+	Args:
+		df (pandas.DataFrame): DataFrame with X and Y coordinates for each point. Must contain columns "X", "Y" and an identifier column where the identifier is a unique identifier for each point.
+		num_points (int, optional): Number of closest points to return for each point. Defaults to 2.
+		identifier_col (str, optional): Name of the column containing the unique identifier for each point. Defaults to "point".
+
+	Returns:
+		pandas.DataFrame: DataFrame with the closest x points for each point. This contains the index and coordinates of the original and matching points
+	"""
+	rows = []
+	for index in df.index:
+		distance_frame = df.drop(index).copy()
+		x1 = df["X"][index]
+		y1 = df["Y"][index]
+		point1 = df[identifier_col][index]
+		distance_frame["Distance"] = np.sqrt(((distance_frame["X"] - x1) ** 2) + ((distance_frame["Y"] - y1) ** 2))
+		distance_frame = distance_frame.sort_values(by="Distance")
+		# Add two rows: nearest and second nearest, with only coordinate/point columns
+		for i in range(num_points):
+			match = distance_frame.iloc[i]
+			rows.append({
+				"point1": int(point1),
+				"x1": x1,
+				"y1": y1,
+				"point2": int(match[identifier_col]),
+				"x2": match["X"],
+				"y2": match["Y"]})
+	return pd.DataFrame(rows)
+
 def run_z_accuracy(input_image,
 		output_directory, save_suffix=""):
+	"""Used to measure accuracy of the z stage using a z-stack image of an Argolite Z-ladder.
+
+	Args:
+		input_image (ij.ImagePlus): ImagePlus object containing a z-stack image of an Argolite Z-ladder.
+		output_directory (str): Path to the directory where output files will be saved.
+		save_suffix (str, optional): Suffix to append to the output filenames. Defaults to "".
+
+	Raises:
+		RuntimeError: Function called without initialising ImageJ.
+		ValueError: Input image is not a Z stack.
+	"""
+	# ImageJ must be initialised to use this function as it relies on ImageJ functions and classes
 	if batch_qc._ij is None:
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
-	
+	# Z stack is needed for this analysis
 	if not input_image.size_z > 1:
 			raise ValueError(f"Image {input_image.name} (ID: {input_image.id}) requires a Z stack for z accuracy analysis but sizeZ is {input_image.size_z}.")
 	
@@ -32,7 +76,6 @@ def run_z_accuracy(input_image,
 	FileName = input_image.name
 	FileNameNoExtension = ".".join(FileName.split(".")[:-1])
 	OutputPath = output_directory
-	#------------------------------------------------------^
 
 	Calibration = image_plus.getCalibration()
 	ZDepth = Calibration.pixelDepth
@@ -47,38 +90,18 @@ def run_z_accuracy(input_image,
 	# Runs analyze particles to get a list of ROIs
 	RoiList = analyzeParticles(Projected, size_min="10")
 
-	# Gets the centroid of each ROI and adds to a list-------------------v
+	# Gets the centroid of each ROI and adds to a list
 	PointList = []
 	for ThisRoi in RoiList:
 		Centroid = getRoiMeasurements(ThisRoi, Projected, [batch_qc._java["Measurements"].CENTROID])
-		# Must be a tuple to be hashable in dictionary
-		PointList.append(tuple([Centroid["X"], Centroid["Y"]]))
-	#--------------------------------------------------------------------^
+		PointList.append([Centroid["X"], Centroid["Y"]])
 
+	# Creates a pandas dataframe of the points
 	df = pd.DataFrame(PointList, columns=["X", "Y"])
 	df["point"] = df.index
 
-	rows = []
+	comparison_df = closest_x_points(df, num_points=2, identifier_col="point")
 
-	for index in df.index:
-		distance_frame = df.drop(index).copy()
-		x1 = df["X"][index]
-		y1 = df["Y"][index]
-		point1 = df["point"][index]
-		distance_frame["Distance"] = np.sqrt(((distance_frame["X"] - x1) ** 2) + ((distance_frame["Y"] - y1) ** 2))
-		distance_frame = distance_frame.sort_values(by="Distance")
-		# Add two rows: nearest and second nearest, with only coordinate/point columns
-		for i in [0, 1]:
-			match = distance_frame.iloc[i]
-			rows.append({
-				"point1": int(point1),
-				"x1": x1,
-				"y1": y1,
-				"point2": int(match["point"]),
-				"x2": match["X"],
-				"y2": match["Y"]})
-
-	comparison_df = pd.DataFrame(rows)
 	comparison_df["angle"] = np.degrees(np.arctan((comparison_df["y1"] - comparison_df["y2"]) / (comparison_df["x1"] - comparison_df["x2"])))
 	comparison_df.loc[comparison_df["angle"] >= 180, "angle"] -= 180
 	comparison_df["angle"] = comparison_df["angle"].div(10).round(0) * 10
