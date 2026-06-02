@@ -42,9 +42,10 @@ def analyzeParticles(
 	batch_qc._java["IJ"].run(Binary_Image, "Analyze Particles...", AnalyzeParticlesSettings)
 	# Gets the Overlayed ROIs from analyze particles
 	Overlayed_Rois = Binary_Image.getOverlay()
-	# Takes the overlay and turns it into an array of ROI
-	RoiList = Overlayed_Rois.toArray()
-	if RoiList is None:
+	if Overlayed_Rois is not None:
+		# Takes the overlay and turns it into an array of ROI
+		RoiList = Overlayed_Rois.toArray()
+	else:
 		RoiList = []
 	# Removes this overlay to clean up the image
 	batch_qc._java["IJ"].run(Binary_Image, "Remove Overlay", "")
