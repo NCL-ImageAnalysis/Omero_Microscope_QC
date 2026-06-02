@@ -148,7 +148,7 @@ def getProjectedBeads(Imp, exclude_edges=True):
 	# Thresholds the image to get the ladder
 	batch_qc._java["IJ"].setAutoThreshold(Projected, "Otsu dark")
 	batch_qc._java["IJ"].run(Projected, "Convert to Mask", "")
-	RoiList = analyzeParticles(Projected, exclude_edges)
+	RoiList = analyzeParticles(Projected, exclude=exclude_edges)
 	Projected.close()
 	return RoiList
 	
