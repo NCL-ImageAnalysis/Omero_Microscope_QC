@@ -6,9 +6,13 @@ from .imagej_utils import *
 import imagej
 import scyjava
 
+# Global variables
+# ImageJ instance - None until initialised by calling batch_qc.initialise()
 _ij = None
+# Dictionary to hold imported Java classes, populated on initialisation
 _java = {}
-
+# Dictionary with keys for the name of each java import and the package path as the value. 
+# This is used to import the required Java classes on initialisation and store them in the _java dictionary for use in other functions in this module. 
 _JAVA_CLASSES = {
 	"Double": "java.lang.Double",
 	"WindowManager": "ij.WindowManager",
@@ -21,7 +25,6 @@ _JAVA_CLASSES = {
 	"driftProfilerReport": "metroloJ_QC.report.driftProfilerReport",
 	"PSFprofiler": "metroloJ_QC.resolution.PSFprofiler",
 	"PSFprofilerReport": "metroloJ_QC.report.PSFprofilerReport",
-	"Math": "java.lang.Math",
 	"IJ": "ij.IJ",
 	"FileSaver": "ij.io.FileSaver",
 	"Line": "ij.gui.Line",
@@ -31,7 +34,6 @@ _JAVA_CLASSES = {
 	"ResultsTable": "ij.measure.ResultsTable",
 	"ZProjector": "ij.plugin.ZProjector",
 	"Analyzer": "ij.plugin.filter.Analyzer",
-	"NoSuchFileException": "java.nio.file.NoSuchFileException",
 	"Slicer": "ij.plugin.Slicer",
 	"MaximumFinder": "ij.plugin.filter.MaximumFinder"
 }
@@ -47,5 +49,7 @@ def initialise(*args, memory=None, **kwargs):
 
 	if memory is not None:
 		scyjava.config.add_option(f"-Xmx{memory}")
+	# Initialises ImageJ
 	_ij = imagej.init(*args, **kwargs)
+	# Imports required Java classes and stores them in the _java dictionary
 	_java = {name: scyjava.jimport(class_path) for name, class_path in _JAVA_CLASSES.items()}
