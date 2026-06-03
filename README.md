@@ -24,7 +24,7 @@ I would recommend using mamba instead of conda as it is much faster at resolving
 
 Create your environment with:
 
-    mamba create -n batch-qc-env python=3.12 pyimagej openjdk=11
+    mamba create -n omero-microscope-qc-env python=3.12 pyimagej openjdk=11
 
 This will create your environments and install pyImageJ and java requirements. For any issues at this stage see pyImageJ's documentation here: https://py.imagej.net/en/latest/index.html
 
@@ -34,7 +34,7 @@ When that is installed you can then install omero_microscope_qc and all remainin
 
 If you have git installed this can be done with:
 
-    pip install git+https://github.com/NCL-ImageAnalysis/omero_microscope_qc.git
+    pip install git+https://github.com/NCL-ImageAnalysis/Omero_Microscope_QC.git
 
 Otherwise you can download the repository, navigate to where the folder is extracted and install with
 
