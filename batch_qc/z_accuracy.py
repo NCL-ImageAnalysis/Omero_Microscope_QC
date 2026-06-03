@@ -1,6 +1,5 @@
 # Python modules
-import copy, os
-from collections import Counter
+import os
 import pandas as pd
 import networkx as nx
 import numpy as np
