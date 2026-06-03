@@ -40,12 +40,12 @@ def closest_x_points(df, num_points=2, identifier_col="point"):
 				"y2": match["Y"]})
 	return pd.DataFrame(rows)
 
-def get_feducial_points(df):
+def get_feducial_points(df, reference_df):
 	"""Gets the start and end coordinates of one of the Z ladder lines
 
 	Args:
 		df (pandas.DataFrame): DataFrame containing paired points with columns "point1", "x1", "y1", "point2", "x2", "y2". This should be the output of closest_x_points function.
-
+		reference_df (pandas.DataFrame): DataFrame containing reference points with columns "X", "Y" and "point".
 	Returns:
 		tuple: A tuple containing the start and end coordinates of the Z ladder line in the format (X1, Y1, X2, Y2)
 	"""
@@ -70,12 +70,12 @@ def get_feducial_points(df):
 			if len(path) > len(longest_path):
 				longest_path = path
 	# First node in the graph will be the start of the ladder and the last node will be the end of the ladder
-	feducial_start = df[df["point1"] == longest_path[0]].reset_index()
-	feducial_end = df[df["point1"] == longest_path[-1]].reset_index()
-	X1 = feducial_start["x1"][0]
-	Y1 = feducial_start["y1"][0]
-	X2 = feducial_end["x2"][0]
-	Y2 = feducial_end["y2"][0]
+	feducial_start = reference_df[reference_df["point"] == longest_path[0]].reset_index()
+	feducial_end = reference_df[reference_df["point"] == longest_path[-1]].reset_index()
+	X1 = feducial_start["X"][0]
+	Y1 = feducial_start["Y"][0]
+	X2 = feducial_end["X"][0]
+	Y2 = feducial_end["Y"][0]
 	return X1, Y1, X2, Y2
 
 def run_z_accuracy(input_image,
@@ -142,7 +142,7 @@ def run_z_accuracy(input_image,
 	# Gets a dataframe with the closest 2 points for each point which will be used to find the coordinates of the start and end of the ladder
 	comparison_df = closest_x_points(df, num_points=2, identifier_col="point")
 	# Gets the coordinates of the start and end of the ladder to act as a feducial line for the rest of the analysis
-	line_args = get_feducial_points(comparison_df)
+	line_args = get_feducial_points(comparison_df, df)
 	
 	# Creates an ImageJ line roi 
 	FeducialLine = batch_qc._java["Line"](*line_args)
