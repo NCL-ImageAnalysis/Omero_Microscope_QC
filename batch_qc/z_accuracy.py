@@ -27,6 +27,8 @@ def closest_x_points(df, num_points=2, identifier_col="point"):
 		point1 = df[identifier_col][index]
 		distance_frame["Distance"] = np.sqrt(((distance_frame["X"] - x1) ** 2) + ((distance_frame["Y"] - y1) ** 2))
 		distance_frame = distance_frame.sort_values(by="Distance")
+		if len(distance_frame) < num_points:
+			raise ValueError(f"num_points is set to {num_points} but there are only {len(distance_frame)} other points in the dataframe.")
 		# Add two rows: nearest and second nearest, with only coordinate/point columns
 		for i in range(num_points):
 			match = distance_frame.iloc[i]
