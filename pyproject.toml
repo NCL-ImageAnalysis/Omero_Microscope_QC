@@ -18,7 +18,8 @@ dependencies = [
 	"pyimagej",
 	"omero-py",
 	"networkx",
-	"pandas"
+	"pandas",
+	"click"
 ]
 
 [tool.setuptools]
