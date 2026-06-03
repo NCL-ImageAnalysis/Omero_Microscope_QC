@@ -87,8 +87,9 @@ def run_analysis(image, output_directory, to_method_name, thresholding_method, c
 def attach_results(image, output_directory, connection, method, clear_local_output=False):
 	print("Attaching results to OMERO...")
 	for root, dirs, files in os.walk(output_directory, top_down=False):
+		rootpath = pathlib.Path(root)
 		for f in files:
-			image.attach_annotation(connection, str(root / f), f"qc.{method}")
+			image.attach_annotation(connection, str(rootpath / f), f"qc.{method}")
 	image.add_key_values(connection, {"QC_Processed": "True"}, namespace="QC")
 
 	if clear_local_output:
