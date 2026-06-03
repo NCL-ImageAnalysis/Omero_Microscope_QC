@@ -1,4 +1,4 @@
-import batch_qc
+import omero_microscope_qc
 
 def analyzeParticles(
 		Binary_Image,
@@ -26,7 +26,7 @@ def analyzeParticles(
 		[PolygonRoi]: Outputted Rois
 	"""	
 	
-	if batch_qc._ij is None:
+	if omero_microscope_qc._ij is None:
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	
 	# Defines analyse particles settings
@@ -39,7 +39,7 @@ def analyzeParticles(
 		AnalyzeParticlesSettings += " pixel"
 	# Runs the analyze particles command to get ROI. 
 	# Done by adding to the overlay in order to not have ROIManger shown to user
-	batch_qc._java["IJ"].run(Binary_Image, "Analyze Particles...", AnalyzeParticlesSettings)
+	omero_microscope_qc._java["IJ"].run(Binary_Image, "Analyze Particles...", AnalyzeParticlesSettings)
 	# Gets the Overlayed ROIs from analyze particles
 	Overlayed_Rois = Binary_Image.getOverlay()
 	if Overlayed_Rois is not None:
@@ -48,7 +48,7 @@ def analyzeParticles(
 	else:
 		RoiList = []
 	# Removes this overlay to clean up the image
-	batch_qc._java["IJ"].run(Binary_Image, "Remove Overlay", "")
+	omero_microscope_qc._java["IJ"].run(Binary_Image, "Remove Overlay", "")
 	return RoiList
 
 def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
@@ -63,10 +63,10 @@ def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
 		 dict: Dictionary of measurements with column headings as titles
 	"""	
 
-	if batch_qc._ij is None:
+	if omero_microscope_qc._ij is None:
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 
-	Measurements = batch_qc._java["Measurements"]
+	Measurements = omero_microscope_qc._java["Measurements"]
 
 	# This dictionary converts Measurement_Options to the corresponding column names in the results table
 	Measurement_Dict = {
@@ -100,17 +100,17 @@ def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
 	}
 
 	# Initialises a new empty results table
-	RTable = batch_qc._java["ResultsTable"]()
+	RTable = omero_microscope_qc._java["ResultsTable"]()
 	# Initialises an Analyzer object using 
 	# the image and the empty results table
 	try:
 		# If input list is of ij.measure.Measurements will use those measurements for the analyzer
 		Measurement_int = sum(Measurement_Options)
-		An = batch_qc._java["Analyzer"](Image, Measurement_int, RTable)
+		An = omero_microscope_qc._java["Analyzer"](Image, Measurement_int, RTable)
 	except TypeError:
 		# Otherwise will just use global measurement options
 		Measurement_int = None
-		An = batch_qc._java["Analyzer"](Image, RTable)
+		An = omero_microscope_qc._java["Analyzer"](Image, RTable)
 	# Selects the roi on the image
 	Image.setRoi(SampleRoi)
 	# Takes the measurements
@@ -145,12 +145,12 @@ def getProjectedBeads(Imp, exclude_edges=True):
 	Returns:
 		[ij.gui.Roi]: List of ROIs corresponding to the beads in the projected image
 	"""
-	Projected = batch_qc._java["ZProjector"].run(Imp, "max")
+	Projected = omero_microscope_qc._java["ZProjector"].run(Imp, "max")
 	# Gaussian blur image
-	batch_qc._java["IJ"].run(Projected, "Gaussian Blur...", "sigma=2")
+	omero_microscope_qc._java["IJ"].run(Projected, "Gaussian Blur...", "sigma=2")
 	# Thresholds the image to get the ladder
-	batch_qc._java["IJ"].setAutoThreshold(Projected, "Otsu dark")
-	batch_qc._java["IJ"].run(Projected, "Convert to Mask", "")
+	omero_microscope_qc._java["IJ"].setAutoThreshold(Projected, "Otsu dark")
+	omero_microscope_qc._java["IJ"].run(Projected, "Convert to Mask", "")
 	RoiList = analyzeParticles(Projected, exclude=exclude_edges)
 	Projected.close()
 	return RoiList
@@ -203,7 +203,7 @@ def get_crop_roi_params(Imp, scaled_width, scaled_height):
 	NoScale = Imp.crop()
 	NoScale.removeScale()
 	for ThisRoi in RoiList:
-		Centroid_dict = getRoiMeasurements(ThisRoi, NoScale, [batch_qc._java["Measurements"].CENTROID])
+		Centroid_dict = getRoiMeasurements(ThisRoi, NoScale, [omero_microscope_qc._java["Measurements"].CENTROID])
 		goodpoint = crop_points(Imp, [round(Centroid_dict["X"]), round(Centroid_dict["Y"])], width_px, height_px)
 		if goodpoint is not None:
 			FilteredPointList.append(goodpoint)

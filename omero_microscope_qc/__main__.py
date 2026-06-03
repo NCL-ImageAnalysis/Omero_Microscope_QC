@@ -1,8 +1,8 @@
 import json
 import sys
 import os
-import batch_qc
-from batch_qc import metroloJ_access, omero_objects, z_accuracy
+import omero_microscope_qc
+from omero_microscope_qc import metroloJ_access, omero_objects, z_accuracy
 import click
 import pathlib
 import shutil
@@ -211,7 +211,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	
 	print ("Initialising Fiji...")
 	try:
-		batch_qc.initialise(fiji_path, mode="interactive", memory=memory)
+		omero_microscope_qc.initialise(fiji_path, mode="interactive", memory=memory)
 	except RuntimeError as e:
 		print(f"Failed to initialise Fiji. Please check the Fiji path and ensure it is correct.")
 		conn.close()
@@ -300,7 +300,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	try:
 		print("All images processed. Closing connection to OMERO server.")
 		conn.close()
-		batch_qc._ij.dispose()
+		omero_microscope_qc._ij.dispose()
 		sys.exit(0)
 		os._exit(0)
 	except Exception:

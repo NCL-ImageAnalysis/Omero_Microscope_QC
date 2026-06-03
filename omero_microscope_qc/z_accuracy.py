@@ -3,8 +3,8 @@ import os
 import pandas as pd
 import networkx as nx
 import numpy as np
-import batch_qc
-from batch_qc.imagej_utils import *
+import omero_microscope_qc
+from omero_microscope_qc.imagej_utils import *
 
 def closest_x_points(df, num_points=2, identifier_col="point"):
 	"""Takes a pandas dataframe with X and Y coordinates for each point and returns a dataframe with the closest x points for each point.
@@ -92,21 +92,21 @@ def run_z_accuracy(input_image,
 		ValueError: Input image is not a Z stack.
 	"""
 	# ImageJ must be initialised to use this function as it relies on ImageJ functions and classes
-	if batch_qc._ij is None:
-		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
+	if omero_microscope_qc._ij is None:
+		raise RuntimeError("ImageJ has not been initialised. Please call omero_microscope_qc.initialise() before use.")
 	# Z stack is needed for this analysis
 	if not input_image.size_z > 1:
 			raise ValueError(f"Image {input_image.name} (ID: {input_image.id}) requires a Z stack for z accuracy analysis but sizeZ is {input_image.size_z}.")
 	
 	# This section sets the measurements that will be used
-	AnalyzerClass = batch_qc._java["Analyzer"]()
+	AnalyzerClass = omero_microscope_qc._java["Analyzer"]()
 	# Gets original measurements to reset later
 	OriginalMeasurements = AnalyzerClass.getMeasurements()
 
 	# Sets the measurements to be used
 	AnalyzerClass.setMeasurements(
-		batch_qc._java["Measurements"].SHAPE_DESCRIPTORS 
-		+ batch_qc._java["Measurements"].CENTROID
+		omero_microscope_qc._java["Measurements"].SHAPE_DESCRIPTORS 
+		+ omero_microscope_qc._java["Measurements"].CENTROID
 	)
 
 	image_plus = input_image.generate_ImagePlus().duplicate()
@@ -120,19 +120,19 @@ def run_z_accuracy(input_image,
 	ZDepth = Calibration.pixelDepth
 
 	# Max intensity of the image to get all of the ladder
-	Projected = batch_qc._java["ZProjector"].run(image_plus, "max")
+	Projected = omero_microscope_qc._java["ZProjector"].run(image_plus, "max")
 	# Removes the scale so ROI coordinates are correct
 	Projected.removeScale()
 	# Thresholds the image to get the ladder
-	batch_qc._java["IJ"].setAutoThreshold(Projected, "Default dark")
-	batch_qc._java["IJ"].run(Projected, "Convert to Mask", "")
+	omero_microscope_qc._java["IJ"].setAutoThreshold(Projected, "Default dark")
+	omero_microscope_qc._java["IJ"].run(Projected, "Convert to Mask", "")
 	# Runs analyze particles to get a list of ROIs
 	RoiList = analyzeParticles(Projected, size_min="10")
 
 	# Gets the centroid of each ROI and adds to a list
 	PointList = []
 	for ThisRoi in RoiList:
-		Centroid = getRoiMeasurements(ThisRoi, Projected, [batch_qc._java["Measurements"].CENTROID])
+		Centroid = getRoiMeasurements(ThisRoi, Projected, [omero_microscope_qc._java["Measurements"].CENTROID])
 		PointList.append([Centroid["X"], Centroid["Y"]])
 
 	# Creates a pandas dataframe of the points
@@ -145,16 +145,16 @@ def run_z_accuracy(input_image,
 	line_args = get_feducial_points(comparison_df, df)
 	
 	# Creates an ImageJ line roi 
-	FeducialLine = batch_qc._java["Line"](*line_args)
+	FeducialLine = omero_microscope_qc._java["Line"](*line_args)
 	# This angle is not rounded as it is used to rotate the image
 	FeducialAngle = FeducialLine.getAngle()
 
 	# Need to use an overlay so it will rotate with the image
-	LineOverlay = batch_qc._java["Overlay"](FeducialLine)
+	LineOverlay = omero_microscope_qc._java["Overlay"](FeducialLine)
 	image_plus.setOverlay(LineOverlay)
 	
 	# Rotates the image so the ladder is horizontal
-	batch_qc._java["IJ"].run(image_plus, "Arbitrarily...", "angle=" + str(FeducialAngle) + " interpolate stack")
+	omero_microscope_qc._java["IJ"].run(image_plus, "Arbitrarily...", "angle=" + str(FeducialAngle) + " interpolate stack")
 	# Gets the Rotated Roi from the overlay
 	RotatedLineOverlay = image_plus.getOverlay()
 	RotatedLineRoi = RotatedLineOverlay.get(0)
@@ -163,12 +163,12 @@ def run_z_accuracy(input_image,
 	image_plus.setOverlay(None)
 
 	# Gets the centroid of the rotated line
-	LineCentroid = getRoiMeasurements(RotatedLineRoi, image_plus, [batch_qc._java["Measurements"].CENTROID])
+	LineCentroid = getRoiMeasurements(RotatedLineRoi, image_plus, [omero_microscope_qc._java["Measurements"].CENTROID])
 
 	# Gets the width of the image
 	Width = image_plus.getWidth()
 	# Creates a box roi that is 1 pixel high and the width of the image centred on the line centroid
-	BoxRoi = batch_qc._java["Roi"](0, LineCentroid["Y"], Width, 1)
+	BoxRoi = omero_microscope_qc._java["Roi"](0, LineCentroid["Y"], Width, 1)
 
 	# Crops the image to the single line
 	image_plus.setRoi(BoxRoi)
@@ -177,16 +177,16 @@ def run_z_accuracy(input_image,
 	image_plus.close()
 
 	# Runs the reslice command to get the XZ image similar to orthagonal view
-	SlicedImp = batch_qc._java["Slicer"]().reslice(LineImage)
+	SlicedImp = omero_microscope_qc._java["Slicer"]().reslice(LineImage)
 
 	# Performs gaussian blur to smooth the image
-	batch_qc._java["IJ"].run(SlicedImp, "Gaussian Blur...", "sigma=6")
+	omero_microscope_qc._java["IJ"].run(SlicedImp, "Gaussian Blur...", "sigma=6")
 	# Gets the statistics which includes the minimum and maximum intensity of the image
 	ImpStats = SlicedImp.getStatistics()
 	# Sets the prominence for the find maxima command to be half the difference between the min and max intensity
 	Prominence = (ImpStats.max - ImpStats.min)/2
 	# Finds the maxima in the image and outputs to a results table
-	polygon = batch_qc._java["MaximumFinder"]().getMaxima(SlicedImp.getProcessor(), Prominence, False)
+	polygon = omero_microscope_qc._java["MaximumFinder"]().getMaxima(SlicedImp.getProcessor(), Prominence, False)
 
 	results = pd.DataFrame({"X": polygon.xpoints[:polygon.npoints], "Y": polygon.ypoints[:polygon.npoints]})
 	results["AxialStep"] = results["Y"] * float(input_image.scale_z.getValue())
@@ -201,7 +201,7 @@ def run_z_accuracy(input_image,
 	# Resets the contrast for easier viewing
 	SlicedImp.resetDisplayRange()
 	# Saves the XZ image and closes to save memory
-	batch_qc._java["FileSaver"](SlicedImp).saveAsTiff(os.path.join(OutputPath, f"{FileNameNoExtension}{save_suffix}_XZ.tif"))
+	omero_microscope_qc._java["FileSaver"](SlicedImp).saveAsTiff(os.path.join(OutputPath, f"{FileNameNoExtension}{save_suffix}_XZ.tif"))
 	SlicedImp.close()
 
 	# Resets the measurements to the original settings

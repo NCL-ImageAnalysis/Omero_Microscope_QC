@@ -1,4 +1,4 @@
-import batch_qc
+import omero_microscope_qc
 
 # Global variables--------------------------------------------------------------------------------------------v
 # Dictionary to hold method strings and return strings for MetroloJDialog initialisation
@@ -61,7 +61,7 @@ def initialize_MetroloJDialog(method,
 	Returns:
 		metroloJ_QC.setup.MetroloJDialog: The initialised MetroloJDialog instance
 	"""
-	if batch_qc._ij is None:
+	if omero_microscope_qc._ij is None:
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	
 	# Input checks---------------------------------------------------------------------------------------------------------------------------v
@@ -101,9 +101,9 @@ def initialize_MetroloJDialog(method,
 		image_plus = image.generate_ImagePlus()
 
 	# MetroloJDialog needs to be the active image in ImageJ, so sets the current image to the image plus of the image being analysed
-	batch_qc._java["WindowManager"].setTempCurrentImage(image_plus)
+	omero_microscope_qc._java["WindowManager"].setTempCurrentImage(image_plus)
 	# Initialises MetroloJDialog
-	Dialog = batch_qc._java["MetroloJDialog"](method_string, batch_qc._java["QC_Options"]())
+	Dialog = omero_microscope_qc._java["MetroloJDialog"](method_string, omero_microscope_qc._java["QC_Options"]())
 	Dialog.title = title_string
 	Dialog.beadDetectionThreshold = thresholding_method
 	Dialog.centerDetectionMethodIndex = center_integer
@@ -152,7 +152,7 @@ def execute_MetroloJ_process(Dialog, report_dir, report_name, aquisition_date):
 	Returns:
 		The instance of the process that was run, which can be used to access outputs such as images and measurements tables.
 	"""
-	if batch_qc._ij is None:
+	if omero_microscope_qc._ij is None:
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	image = Dialog.ip
 	image_title = image.getTitle()
@@ -161,17 +161,17 @@ def execute_MetroloJ_process(Dialog, report_dir, report_name, aquisition_date):
 	except AttributeError:
 		time_string = "Unknown"
 	creationInfo = [time_string, "from Metadata"]
-	coords = [batch_qc._java["Double"].NaN, batch_qc._java["Double"].NaN]
+	coords = [omero_microscope_qc._java["Double"].NaN, omero_microscope_qc._java["Double"].NaN]
 	
 	if Dialog.reportType == "pp":
-		execution_instance = batch_qc._java["PSFprofiler"](image, Dialog, image_title, coords, creationInfo)
-		report_instance = batch_qc._java["PSFprofilerReport"](image, Dialog, image_title, coords, creationInfo)
+		execution_instance = omero_microscope_qc._java["PSFprofiler"](image, Dialog, image_title, coords, creationInfo)
+		report_instance = omero_microscope_qc._java["PSFprofilerReport"](image, Dialog, image_title, coords, creationInfo)
 	elif Dialog.reportType == "pos":
-		execution_instance = batch_qc._java["driftProfiler"](image, Dialog, image_title, coords, creationInfo)
-		report_instance = batch_qc._java["driftProfilerReport"](image, Dialog, image_title, coords, creationInfo)
+		execution_instance = omero_microscope_qc._java["driftProfiler"](image, Dialog, image_title, coords, creationInfo)
+		report_instance = omero_microscope_qc._java["driftProfilerReport"](image, Dialog, image_title, coords, creationInfo)
 	elif Dialog.reportType == "coa":
-		execution_instance = batch_qc._java["coAlignement"](image, Dialog, image_title, coords, creationInfo)
-		report_instance = batch_qc._java["coAlignementReport"](image, Dialog, image_title, coords, creationInfo)
+		execution_instance = omero_microscope_qc._java["coAlignement"](image, Dialog, image_title, coords, creationInfo)
+		report_instance = omero_microscope_qc._java["coAlignementReport"](image, Dialog, image_title, coords, creationInfo)
 	else:
 		raise NotImplementedError("Report types supported are PSF profiler, stage positioning and drift and co-registration")
 	

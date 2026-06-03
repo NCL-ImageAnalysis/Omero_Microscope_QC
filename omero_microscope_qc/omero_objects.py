@@ -2,7 +2,7 @@ import os
 import numpy as np
 import xarray
 import itertools
-import batch_qc
+import omero_microscope_qc
 
 import omero
 from omero import gateway
@@ -288,15 +288,15 @@ class ImageObject(OmeroObject):
 	def generate_ImagePlus(self):
 		"Generates an ImagePlus object from the python image data"
 		# Requires ImageJ to be initialised to work
-		if batch_qc._ij is None:
-			raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
+		if omero_microscope_qc._ij is None:
+			raise RuntimeError("ImageJ has not been initialised. Please call omero_microscope_qc.initialise() before use.")
 		# If the image data has not been loaded, it will be loaded now.
 		if self.image_data is None:
 			self.load_image_data()
 		# Converts the image to an ImagePlus. This is just a wrapper so does not involve data duplication in memory
-		image_plus = batch_qc._ij.py.to_imageplus(self.image_data)
+		image_plus = omero_microscope_qc._ij.py.to_imageplus(self.image_data)
 		# Sets the calibration from stored OMERO metadata
-		CalibrationObj = batch_qc._java["Calibration"]()
+		CalibrationObj = omero_microscope_qc._java["Calibration"]()
 		CalibrationObj.setXUnit(str(self.scale_x.getUnit()))
 		CalibrationObj.setYUnit(str(self.scale_y.getUnit()))
 		CalibrationObj.pixelWidth = float(self.scale_x.getValue())
@@ -348,7 +348,7 @@ class ImageObject(OmeroObject):
 		if self.image_plus is None:
 			self.generate_ImagePlus()
 		# Calls the function from imagej_utils
-		rois = batch_qc.imagej_utils.get_crop_roi_params(self.image_plus, scaled_width, scaled_height)
+		rois = omero_microscope_qc.imagej_utils.get_crop_roi_params(self.image_plus, scaled_width, scaled_height)
 		for roi in rois:
 			self.add_roi(conn, *roi)
 		

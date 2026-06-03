@@ -1,3 +1,5 @@
 batch_qc/__pycache__/
 batch_qc.egg-info/
+omero_microscope_qc.egg-info/
 build/
+omero_microscope_qc/__pycache__/

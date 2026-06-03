@@ -1,4 +1,4 @@
-# batch_qc
+# omero_microscope_qc
 
 This python module allows for batch processing of images used for quality control of microscopes based upon [QUAREP-LiMi's](https://quarep.org/) recommendations. 
 
@@ -6,7 +6,7 @@ It uses [OMERO](https://www.openmicroscopy.org/omero/) and the ImageJ plugin [Me
 
 ## Installation
 ### System Requirements
-Requires an operating system with a GUI interface. Unfortunately due to requirements of MetroloJ_QC batch_qc cannot be run fully headlessly.
+Requires an operating system with a GUI interface. Unfortunately due to requirements of MetroloJ_QC omero_microscope_qc cannot be run fully headlessly.
 
 Currently only Windows devices have been tested but it should be compatible with Mac OS and Linux (please let us know if these work for you and we can update our documentation).
 
@@ -30,25 +30,25 @@ This will create your environments and install pyImageJ and java requirements. F
 
 To install omero-py you will need to first install ZeroC IcePy 3.6 python bindings. Details for how to do this can be found on omero-py's GitHub: https://github.com/ome/omero-py
 
-When that is installed you can then install batch_qc and all remaining requirements.
+When that is installed you can then install omero_microscope_qc and all remaining requirements.
 
 If you have git installed this can be done with:
 
-    pip install git+https://github.com/NCL-ImageAnalysis/Batch_QC.git
+    pip install git+https://github.com/NCL-ImageAnalysis/omero_microscope_qc.git
 
 Otherwise you can download the repository, navigate to where the folder is extracted and install with
 
     pip install .
 
 ### Fiji/MetroloJ_QC installation
-batch_qc requires a working Fiji installation with MetroloJ_QC installed into Fiji's plugin folder.
+omero_microscope_qc requires a working Fiji installation with MetroloJ_QC installed into Fiji's plugin folder.
 
 You can download Fiji from: https://fiji.sc/ and the MetroloJ_QC jar file from its GitHub repository here: https://github.com/MontpellierRessourcesImagerie/MetroloJ_QC
 
 After Fiji has been unzipped from its archive download the MetroloJ_QC jar file to its plugin folder. Currently this has been tested on MetroloJ_QC v1.3.1.2
 
 ## OMERO Setup
-batch_qc uses OMERO to access images and metadata, as well as for storage of its outputs. 
+omero_microscope_qc uses OMERO to access images and metadata, as well as for storage of its outputs. 
 
 It expects a structure of:
 
@@ -60,14 +60,14 @@ It expects a structure of:
 Additional settings for analysis can be attached as key value pairs at any level of this structure, with bottom-most matching key taking precedence. Any class attributes of the MetroloJDialog class that can be cast from text can be added as key value pairs and they will be automatically applied to the analysis. A full list of key value pairs and their functions can be found in [this document](key_value_pairs.md).	 
 
 ## Usage
-Running the script requires an omero config file, the template of which is called [.omero_config](https://github.com/NCL-ImageAnalysis/Batch_QC/blob/main/.omero_config). This requires the hostname of the OMERO server you are connecting to along with a username and password for this server. You also need to provide a path to the top level folder where your version of fiji with MetroloJ_QC is installed.
+Running the script requires an omero config file, the template of which is called [.omero_config](https://github.com/NCL-ImageAnalysis/omero_microscope_qc/blob/main/.omero_config). This requires the hostname of the OMERO server you are connecting to along with a username and password for this server. You also need to provide a path to the top level folder where your version of fiji with MetroloJ_QC is installed.
 
 The script can then be run with:
 
-    python -m batch_qc [temporary_output_path] --config_path [omero_config_path]
+    python -m omero_microscope_qc [temporary_output_path] --config_path [omero_config_path]
 
 Additional arguments can be listed with:
 
-    python -m batch_qc --help
+    python -m omero_microscope_qc --help
 
 
