@@ -60,8 +60,10 @@ def get_feducial_points(df):
 	df = df[df["angle"] == mode_angle]
 	# Creates a graph where each point is a node and there is an edge between points that are close to each other.
 	graph = nx.from_pandas_edgelist(df, source="point1", target="point2")
+	# Selects one of the ladders (both should be the same)
 	components = [list(c) for c in nx.connected_components(graph)]
 	subgraph = graph.subgraph(components[0])
+	# Finds the longest path in terms of most connected nodes, then gets start and end points from this path as the start and end of the ladder
 	longest_path = []
 	for start in subgraph.nodes():
 		for path in nx.all_simple_paths(subgraph, start, target=[n for n in subgraph.nodes if n != start]):
