@@ -61,9 +61,15 @@ def get_feducial_points(df):
 	# Creates a graph where each point is a node and there is an edge between points that are close to each other.
 	graph = nx.from_pandas_edgelist(df, source="point1", target="point2")
 	components = [list(c) for c in nx.connected_components(graph)]
+	subgraph = graph.subgraph(components[0])
+	longest_path = []
+	for start in subgraph.nodes():
+		for path in nx.all_simple_paths(subgraph, start, target=[n for n in subgraph.nodes if n != start]):
+			if len(path) > len(longest_path):
+				longest_path = path
 	# First node in the graph will be the start of the ladder and the last node will be the end of the ladder
-	feducial_start = df[df["point1"] == components[0][0]].reset_index()
-	feducial_end = df[df["point1"] == components[0][-1]].reset_index()
+	feducial_start = df[df["point1"] == longest_path[0]].reset_index()
+	feducial_end = df[df["point1"] == longest_path[-1]].reset_index()
 	X1 = feducial_start["x1"][0]
 	Y1 = feducial_start["y1"][0]
 	X2 = feducial_end["x2"][0]
