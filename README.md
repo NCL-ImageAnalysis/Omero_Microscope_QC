@@ -1,1 +1,67 @@
-###Batch QC
+# batch_qc
+
+This python module allows for batch processing of images used for quality control of microscopes based upon [QUAREP-LiMi's](https://quarep.org/) recommendations. 
+
+It uses [OMERO](https://www.openmicroscopy.org/omero/) and the ImageJ plugin [MetroloJ_QC](https://github.com/MontpellierRessourcesImagerie/MetroloJ_QC) (run via [pyImageJ](https://github.com/imagej/pyimagej)) to perform resolution, co-registration and stage precision analysis on bead images and a custom script for Z-drive accuracy run on images of a "3D Crossing stairs" pattern on an [Argolight](https://argolight.com/) calibration slide. Images are pulled directly from an OMERO server with results attached to the same images. These attachments can then be loaded into the feets-db microscopy QC database.
+
+## Installation
+### System Requirements
+Requires an operating system with a GUI interface. Unfortunately due to requirements of MetroloJ_QC batch_qc cannot be run fully headlessly.
+
+Currently only Windows devices have been tested but it should be compatible with Mac OS and Linux (please let us know if these work for you and we can update our documentation).
+
+### Dependencies
+- Python >= 3.10 (3.12 recommended)
+- [pyimagej](https://pypi.org/project/pyimagej/)
+- [omero-py](https://pypi.org/project/omero-py/)
+- [networkx](https://pypi.org/project/networkx/)
+- [pandas](https://pypi.org/project/pandas/)
+- [click](https://pypi.org/project/click/)
+
+### Installation with conda/mamba
+I would recommend using mamba instead of conda as it is much faster at resolving enviroments. You can get a lightweight implementation with mamba preinstalled with [miniforge](https://github.com/conda-forge/miniforge).
+
+Create your enviroment with:
+
+    mamba create -n batch-qc-env python=3.12 pyimagej openjdk=11
+
+This will create your enviroment and install pyImageJ and java requirements. For any issues at this stage see pyImageJ's documentation here: https://py.imagej.net/en/latest/index.html
+
+To install omero-py you will need to first install ZeroC IcePy 3.6 python bindings. Details for how to do this can be found on omero-py's GitHub: https://github.com/ome/omero-py
+
+When that is installed you can then install batch_qc and all remaining requirements.
+
+If you have git installed this can be done with:
+
+    pip install git+https://github.com/NCL-ImageAnalysis/Batch_QC.git
+
+Otherwise you can download the repository, navigate to where the folder is extracted and install with
+
+    pip install .
+
+### Fiji/MetroloJ_QC installation
+batch_qc requires a working Fiji installation with MetroloJ_QC installed into Fiji's plugin folder.
+
+You can download Fiji from: https://fiji.sc/ and the MetroloJ_QC jar file from its GitHub repository here: https://github.com/MontpellierRessourcesImagerie/MetroloJ_QC
+
+After Fiji has been unzipped from its archive download the MetroloJ_QC jar file to it's plugin folder. Currently this has been tested on v1.3.1.2
+
+## OMERO Setup
+batch_qc uses OMERO to access images and metadata, as well as for storage of its outputs. 
+
+It expects a structure of:
+
+    +--
+
+## Usage
+Running of the script requires an omero config file, the template of which is called [.omero_config](https://github.com/NCL-ImageAnalysis/Batch_QC/blob/main/.omero_config). This requires the hostname of the OMERO server you are connecting too along with a username and password for this server. You also need to provide a path to the top level folder where your version of fiji with MetroloJ_QC is installed.
+
+The script can then be run with:
+
+    python -m batch_qc [temporary_output_path] --config_path [omero_config_path]
+
+Additional arguments can be listed with:
+
+    python -m batch_qc --help
+
+
