@@ -156,7 +156,11 @@ def execute_MetroloJ_process(Dialog, report_dir, report_name, aquisition_date):
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	image = Dialog.ip
 	image_title = image.getTitle()
-	creationInfo = [aquisition_date.strftime("%Y-%m-%d %H:%M:%S"), "from Metadata"]
+	try:
+		time_string = aquisition_date.strftime("%Y-%m-%d %H:%M:%S")
+	except AttributeError:
+		time_string = "Unknown"
+	creationInfo = [time_string, "from Metadata"]
 	coords = [batch_qc._java["Double"].NaN, batch_qc._java["Double"].NaN]
 	
 	if Dialog.reportType == "pp":
