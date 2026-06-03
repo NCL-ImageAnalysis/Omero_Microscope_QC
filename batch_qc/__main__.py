@@ -21,7 +21,7 @@ def Bool_or_Missing(dict_item, key):
 def clear_empty_directories(path):
 	if isinstance(path, str):
 		path = pathlib.Path(path)
-	for root, dirs, files in os.walk(path, top_down=False):
+	for root, dirs, files in os.walk(path, topdown=False):
 		rootpath = pathlib.Path(root)
 		if rootpath != path and not any(rootpath.iterdir()):
 			rootpath.rmdir()
@@ -134,7 +134,7 @@ def attach_results(image, output_directory, connection, method, clear_local_outp
 	"""
 	print("Attaching results to OMERO...")
 	# Walks through output directory and attaches all files to the image with a tag indicating the method used for processing
-	for root, dirs, files in os.walk(output_directory, top_down=False):
+	for root, dirs, files in os.walk(output_directory, topdown=False):
 		rootpath = pathlib.Path(root)
 		for f in files:
 			image.attach_annotation(connection, str(rootpath / f), f"qc.{method}")
