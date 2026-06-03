@@ -1,4 +1,4 @@
-# omero_microscope_qc
+# Omero Microscope QC
 
 This python module allows for batch processing of images used for quality control of microscopes based upon [QUAREP-LiMi's](https://quarep.org/) recommendations. 
 
