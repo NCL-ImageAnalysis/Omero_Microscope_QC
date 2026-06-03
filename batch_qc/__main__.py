@@ -99,7 +99,7 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 			# No suffix needed if processing whole image
 			save_suffix = ""
 		# Processing with metroloJ
-		if dataset_name in ["registration", "psf", "drift"]:
+		if method in ["registration", "psf", "drift"]:
 			print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
 			print("Loading image data and initialising metroloJ dialog...")
 			# Builds the dialog
@@ -115,9 +115,11 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 			# Runs the actual analysis
 			ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory_str, image.name + save_suffix, image.acquisition_date)
 		# Processing with custom z accuracy script
-		elif dataset_name == "z_accuracy":
+		elif method == "z_accuracy":
 			print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
 			z_accuracy.run_z_accuracy(image, image_output_directory_str, save_suffix=save_suffix)
+		else:
+			raise ValueError(f"Unknown method '{method}'. Method must be one of 'registration', 'psf', 'drift' or 'z_accuracy'.")
 	return image_output_directory
 
 def attach_results(image, output_directory, connection, method, clear_local_output=False):
