@@ -32,8 +32,8 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
-	"sphinx.ext.napoleon",
-	"sphinx_automodapi.automodapi"
+    "sphinx.ext.napoleon",
+    "sphinx_automodapi.automodapi"
 ]
 
 autosummary_generate = True

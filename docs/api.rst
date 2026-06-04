@@ -10,4 +10,4 @@ API
 	omero_microscope_qc.imagej_utils
 	omero_microscope_qc.z_accuracy
 
-.. automodapi:: omero_microscope_qc.
+.. automodapi:: omero_microscope_qc
