@@ -109,7 +109,7 @@ def run_z_accuracy(input_image,
 	ZDepth = Calibration.pixelDepth
 
 	# Runs getProjectedBeads to get a list of ROIs of the ladder
-	RoiList = getProjectedBeads(image_plus, size_min="10")
+	RoiList = getProjectedBeads(image_plus, size_min="10", pixel=True)
 
 	No_Scale = image_plus.crop()
 	No_Scale.removeScale()
