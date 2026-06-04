@@ -1,7 +1,7 @@
-from .metroloJ_access import *
-from .omero_objects import *	
-from .z_accuracy import *
-from .imagej_utils import *
+from . import metroloJ_access
+from . import omero_objects
+from . import z_accuracy
+from . import imagej_utils
 
 try:
 	import imagej
