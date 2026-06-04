@@ -38,6 +38,19 @@ extensions = [
 
 autosummary_generate = True
 
+# Read the API surface during docs builds without requiring the full runtime stack.
+autodoc_mock_imports = [
+    "Ice",
+    "imagej",
+    "scyjava",
+    "omero",
+    "numpy",
+    "xarray",
+    "click",
+    "pandas",
+    "networkx",
+]
+
 intersphinx_mapping = {
     "rtd": ("https://docs.readthedocs.io/en/stable/", None),
     "python": ("https://docs.python.org/3/", None),
