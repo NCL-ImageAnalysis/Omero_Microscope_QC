@@ -3,11 +3,18 @@ from .omero_objects import *
 from .z_accuracy import *
 from .imagej_utils import *
 
-import imagej
-import scyjava
+try:
+	import imagej
+	import scyjava
+	_IMAGEJ_IMPORT_ERROR = None
+except ModuleNotFoundError as exc:
+	# Keep the core OMERO utilities importable without the optional ImageJ stack.
+	imagej = None
+	scyjava = None
+	_IMAGEJ_IMPORT_ERROR = exc
 
 # Global variables
-# ImageJ instance - None until initialised by calling batch_qc.initialise()
+# ImageJ instance - None until initialised by calling omero_microscope_qc.initialise()
 _ij = None
 # Dictionary to hold imported Java classes, populated on initialisation
 _java = {}
@@ -46,6 +53,12 @@ def initialise(*args, memory=None, **kwargs):
 		memory (str, optional): The maximum memory allocation pool for the Java virtual machine (e.g. "4g" for 4 gigabytes). Defaults to None.
 	"""
 	global _ij, _java
+
+	if imagej is None or scyjava is None:
+		raise ModuleNotFoundError(
+			"ImageJ support requires optional dependencies. Install with "
+			"'pip install omero_microscope_qc[imagej]' to enable initialise() and ImagePlus-based workflows."
+		) from _IMAGEJ_IMPORT_ERROR
 
 	if memory is not None:
 		scyjava.config.add_option(f"-Xmx{memory}")
