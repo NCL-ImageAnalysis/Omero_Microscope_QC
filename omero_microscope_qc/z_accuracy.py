@@ -51,18 +51,19 @@ def get_feducial_points(df, reference_df):
 	"""
 	# Calculates the angle between each pair of points
 	df["angle"] = np.degrees(np.arctan2((df["y1"] - df["y2"]), (df["x1"] - df["x2"])))
-	# Means parallel lines will have the same angle even if they are in opposite directions.
+	# Means parallel lines will have the same angle even if they are in opposite directions
 	df.loc[df["angle"] >= 180, "angle"] -= 180
 	# Rounds the angles to the nearest 10 degrees to find the most common angle
 	df["angle"] = df["angle"].div(10).round(0) * 10
 	# Gets most common angle and filters the dataframe to only include pairs of points with this angle
 	mode_angle = df["angle"].mode().iloc[0]
 	df = df[df["angle"] == mode_angle]
-	# Creates a graph where each point is a node and there is an edge between points that are close to each other.
+	# Creates a graph where each point is a node and there is an edge between points that are close to each other
 	graph = nx.from_pandas_edgelist(df, source="point1", target="point2")
 	# Selects one of the ladders (both should be the same)
 	components = [list(c) for c in nx.connected_components(graph)]
-	subgraph = graph.subgraph(components[0])
+	# Selects the largest connected component as this should correspond to the ladder
+	subgraph = graph.subgraph(max(components, key=len))
 	# Finds the longest path in terms of most connected nodes, then gets start and end points from this path as the start and end of the ladder
 	longest_path = []
 	for start in subgraph.nodes():
