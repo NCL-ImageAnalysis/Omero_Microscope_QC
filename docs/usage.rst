@@ -15,7 +15,7 @@ It expects a structure of:
 	        └── Dataset - Analysis method
 			    └── Individual images
 
-Additional settings for analysis can be attached as key value pairs at any level of this structure, with bottom-most matching key taking precedence. Any class attributes of the MetroloJDialog class that can be cast from text can be added as key value pairs and they will be automatically applied to the analysis. A full list of key value pairs and their functions can be found in `this document <https://github.com/NCL-ImageAnalysis/Omero_Microscope_QC/blob/main/key_value_pairs.md>`_.
+Additional settings for analysis can be attached as key value pairs at any level of this structure, with bottom-most matching key taking precedence. Any class attributes of the MetroloJDialog class that can be cast from text can be added as key value pairs and they will be automatically applied to the analysis. A full list of key value pairs and their functions can be found in :doc:`key_value_pairs`.
 
 Running the script
 ------------------

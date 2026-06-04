@@ -20,4 +20,5 @@ database.
 
    installation
    usage
+   key_value_pairs
    api
