@@ -38,6 +38,17 @@ extensions = [
 
 autosummary_generate = True
 
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": True,
+    "inherited-members": True,
+    "show-inheritance": True,
+    "member-order": "bysource",
+}
+
+# Include __init__ docs and class-level docs together when rendering classes.
+autoclass_content = "both"
+
 # Read the API surface during docs builds without requiring the full runtime stack.
 autodoc_mock_imports = [
     "Ice",
