@@ -1,6 +1,20 @@
-/* Allow the main documentation content to use the full available width. */
+/* Force RTD theme content container to use available width. */
 .wy-nav-content {
-  max-width: none;
+  max-width: none !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+/* Ensure wrapper does not impose an additional width cap. */
+.wy-nav-content-wrap {
+  max-width: none !important;
+}
+
+/* Keep the mobile layout behavior. */
+@media screen and (max-width: 768px) {
+  .wy-nav-content {
+    margin: 0 !important;
+  }
 }
 
 /* Keep wide tables/code blocks usable on smaller screens. */
