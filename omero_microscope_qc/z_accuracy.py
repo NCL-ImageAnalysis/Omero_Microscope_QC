@@ -97,17 +97,6 @@ def run_z_accuracy(input_image,
 	# Z stack is needed for this analysis
 	if not input_image.size_z > 1:
 			raise ValueError(f"Image {input_image.name} (ID: {input_image.id}) requires a Z stack for z accuracy analysis but sizeZ is {input_image.size_z}.")
-	
-	# This section sets the measurements that will be used
-	AnalyzerClass = omero_microscope_qc._java["Analyzer"]()
-	# Gets original measurements to reset later
-	OriginalMeasurements = AnalyzerClass.getMeasurements()
-
-	# Sets the measurements to be used
-	AnalyzerClass.setMeasurements(
-		omero_microscope_qc._java["Measurements"].SHAPE_DESCRIPTORS 
-		+ omero_microscope_qc._java["Measurements"].CENTROID
-	)
 
 	image_plus = input_image.generate_ImagePlus().duplicate()
 
@@ -119,21 +108,17 @@ def run_z_accuracy(input_image,
 	Calibration = image_plus.getCalibration()
 	ZDepth = Calibration.pixelDepth
 
-	# Max intensity of the image to get all of the ladder
-	Projected = omero_microscope_qc._java["ZProjector"].run(image_plus, "max")
-	# Removes the scale so ROI coordinates are correct
-	Projected.removeScale()
-	# Thresholds the image to get the ladder
-	omero_microscope_qc._java["IJ"].setAutoThreshold(Projected, "Default dark")
-	omero_microscope_qc._java["IJ"].run(Projected, "Convert to Mask", "")
-	# Runs analyze particles to get a list of ROIs
-	RoiList = analyzeParticles(Projected, size_min="10")
+	# Runs getProjectedBeads to get a list of ROIs of the ladder
+	RoiList = getProjectedBeads(ZDepth, size_min="10")
 
+	No_Scale = image_plus.crop()
+	No_Scale.removeScale()
 	# Gets the centroid of each ROI and adds to a list
 	PointList = []
 	for ThisRoi in RoiList:
-		Centroid = getRoiMeasurements(ThisRoi, Projected, [omero_microscope_qc._java["Measurements"].CENTROID])
+		Centroid = getRoiMeasurements(ThisRoi, No_Scale, [omero_microscope_qc._java["Measurements"].CENTROID])
 		PointList.append([Centroid["X"], Centroid["Y"]])
+	No_Scale.close()
 
 	# Creates a pandas dataframe of the points
 	df = pd.DataFrame(PointList, columns=["X", "Y"])
@@ -203,6 +188,3 @@ def run_z_accuracy(input_image,
 	# Saves the XZ image and closes to save memory
 	omero_microscope_qc._java["FileSaver"](SlicedImp).saveAsTiff(os.path.join(OutputPath, f"{FileNameNoExtension}{save_suffix}_XZ.tif"))
 	SlicedImp.close()
-
-	# Resets the measurements to the original settings
-	AnalyzerClass.setMeasurements(OriginalMeasurements)
