@@ -119,7 +119,6 @@ def run_z_accuracy(input_image,
 	for ThisRoi in RoiList:
 		Centroid = getRoiMeasurements(ThisRoi, No_Scale, [omero_microscope_qc._java["Measurements"].CENTROID])
 		PointList.append([Centroid["X"], Centroid["Y"]])
-	No_Scale.close()
 
 	# Creates a pandas dataframe of the points
 	df = pd.DataFrame(PointList, columns=["X", "Y"])
@@ -149,8 +148,9 @@ def run_z_accuracy(input_image,
 	image_plus.setOverlay(None)
 
 	# Gets the centroid of the rotated line
-	LineCentroid = getRoiMeasurements(RotatedLineRoi, image_plus, [omero_microscope_qc._java["Measurements"].CENTROID])
-
+	LineCentroid = getRoiMeasurements(RotatedLineRoi, No_Scale, [omero_microscope_qc._java["Measurements"].CENTROID])
+	No_Scale.close()
+	
 	# Gets the width of the image
 	Width = image_plus.getWidth()
 	# Creates a box roi that is 1 pixel high and the width of the image centred on the line centroid
