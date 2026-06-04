@@ -18,7 +18,8 @@ dependencies = [
 	"omero-py",
 	"networkx",
 	"pandas",
-	"click"
+	"click",
+	"xarray"
 ]
 
 [project.optional-dependencies]
