@@ -49,8 +49,21 @@ def download_annotation_file(annotation_file, output_directory):
 			f.write(chunk)
 
 class OmeroObject:
-	"""Base class for OMERO objects (images, datasets, projects). Contains common methods for attaching annotations/key value pairs and for reloading the object from the server.
-	Should not be initialised directly, use the from_omero_entity class method to create the appropriate object type based on the OMERO entity provided."""
+	"""Base class for OMERO objects (images, datasets, projects).
+
+	Contains common methods for attaching annotations/key value pairs and for
+	reloading the object from the server. Should not be initialised directly;
+	use :meth:`from_omero_entity` to construct the appropriate wrapper class.
+
+	:ivar core: Underlying OMERO entity.
+	:ivar name: OMERO object name.
+	:ivar id: OMERO object ID.
+	:ivar parent: Parent wrapper object (for example dataset/project/image), or ``None``.
+	:ivar omero_class: OMERO class label for the wrapped entity.
+	:ivar annotations: List of all annotations attached to the wrapped OMERO object.
+	:ivar file_annotations: Subset of annotations that are file annotations.
+	:ivar key_value_pairs: Effective merged key-value map, including inherited values from parent objects.
+	"""
 	@classmethod
 	def from_omero_entity(cls, omero_entity, parent=None):
 		"""Factory method to create the appropriate OmeroObject subclass based on the OMERO entity provided
@@ -184,7 +197,10 @@ class OmeroObject:
 			[child.reload(connection) for child in self.children]
 
 class ParentObject(OmeroObject):
-	"Class for OMERO objects that can have child objects e.g. datasets and projects. Contains a list of child objects that are automatically updated when the parent object is reloaded."
+	"""Class for OMERO objects that can have children (for example datasets/projects).
+
+	:ivar children: Child objects wrapped as :class:`OmeroObject` subclasses.
+	"""
 	def __init__(self, omero_entity, parent=None):
 		"""Initialises the ParentObject with the given OMERO entity and its own parent (if applicable).
 
@@ -196,7 +212,31 @@ class ParentObject(OmeroObject):
 		self.children = [OmeroObject.from_omero_entity(child, parent=self) for child in omero_entity.listChildren()]
 
 class ImageObject(OmeroObject):
-	"Class for OMERO image objects. Contains methods for loading and managing image data and metadata"
+	"""Class for OMERO image objects.
+
+	Provides methods for loading/managing image data and image metadata.
+
+	:ivar children: Always ``None`` for images.
+	:ivar size_x: Size of image X dimension in pixels.
+	:ivar size_y: Size of image Y dimension in pixels.
+	:ivar size_z: Size of image Z dimension in slices.
+	:ivar size_c: Number of channels.
+	:ivar size_t: Number of timepoints.
+	:ivar pixels: Primary OMERO pixels object.
+	:ivar scale_x: Physical pixel size in X (OMERO Length type).
+	:ivar scale_y: Physical pixel size in Y (OMERO Length type).
+	:ivar scale_z: Physical pixel size in Z (OMERO Length type), if present.
+	:ivar dim_order: Dimension order used by this wrapper (always ``TCZYX``).
+	:ivar acquisition_date: Acquisition timestamp from OMERO metadata.
+	:ivar objective: Objective settings object from OMERO metadata.
+	:ivar refractive_index: Objective immersion medium refractive index.
+	:ivar NA: Objective numerical aperture.
+	:ivar channels: Channel metadata wrappers as :class:`ChannelObject` items.
+	:ivar shape: Current loaded image shape tuple.
+	:ivar rois: Associated ROIs as :class:`RoiObject` items.
+	:ivar image_data: Loaded image data (xarray DataArray) or ``None``.
+	:ivar image_plus: Cached ImageJ ``ImagePlus`` object or ``None``.
+	"""
 	def __init__(self, image, load_data=False, parent=None, reload=False):
 		"""Initialises the ImageObject. Will populate with metadata and, if enabled, load the image into memory
 
@@ -360,7 +400,12 @@ class ImageObject(OmeroObject):
 		self.image_plus = None
 	
 class ChannelObject(OmeroObject):
-	"Class for OMERO channel objects. Contains metadata about the channel such as emission and excitation wavelengths"
+	"""Class for OMERO channel objects.
+
+	:ivar emission_wave: Emission wavelength metadata from OMERO.
+	:ivar excitation_wave: Excitation wavelength metadata from OMERO.
+	:ivar mode: Channel mode string, or ``None`` if unavailable in metadata.
+	"""
 	def __init__(self, channel):
 		super().__init__(channel)
 		self.emission_wave = channel.getEmissionWave()
@@ -374,7 +419,17 @@ class ChannelObject(OmeroObject):
 		raise NotImplementedError("Attaching annotations to channels is not supported")
 
 class RoiObject(OmeroObject):
-	"Class for OMERO ROI objects. Contains metadata about the ROI such as its shape and position and a method for loading the image data within the ROI"
+	"""Class for OMERO ROI objects.
+
+	Contains ROI geometry metadata and helpers for loading tile-scoped image data.
+
+	:ivar shape: OMERO ROI shape object.
+	:ivar X: ROI top-left X coordinate.
+	:ivar Y: ROI top-left Y coordinate.
+	:ivar Width: ROI width.
+	:ivar Height: ROI height.
+	:ivar Tile: Integer tile tuple ``(x, y, width, height)`` used for tile loading.
+	"""
 	def __init__(self, roi, parent=None):
 		"""Used to initialise the RoiObject from an omero.model.RoiI object.
 
