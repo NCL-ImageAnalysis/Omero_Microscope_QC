@@ -1,12 +1,40 @@
 API
 ===
 
-.. autosummary::
-   :toctree: generated
+Package
+-------
 
-   omero_microscope_qc.omero_objects
-   omero_microscope_qc.metroloJ_access
-   omero_microscope_qc.imagej_utils
-   omero_microscope_qc.z_accuracy
+.. automodule:: omero_microscope_qc
+   :members:
+   :undoc-members:
 
-.. automodapi:: omero_microscope_qc
+Modules
+-------
+
+OMERO Objects
+~~~~~~~~~~~~~
+
+.. automodule:: omero_microscope_qc.omero_objects
+   :members:
+   :undoc-members:
+
+MetroloJ Access
+~~~~~~~~~~~~~~~
+
+.. automodule:: omero_microscope_qc.metroloJ_access
+   :members:
+   :undoc-members:
+
+ImageJ Utils
+~~~~~~~~~~~~
+
+.. automodule:: omero_microscope_qc.imagej_utils
+   :members:
+   :undoc-members:
+
+Z Accuracy
+~~~~~~~~~~
+
+.. automodule:: omero_microscope_qc.z_accuracy
+   :members:
+   :undoc-members:
