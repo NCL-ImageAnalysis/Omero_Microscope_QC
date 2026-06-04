@@ -1,0 +1,11 @@
+/* Allow the main documentation content to use the full available width. */
+.wy-nav-content {
+  max-width: none;
+}
+
+/* Keep wide tables/code blocks usable on smaller screens. */
+.rst-content table.docutils,
+.rst-content div.highlight {
+  overflow-x: auto;
+  display: block;
+}
