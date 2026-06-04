@@ -135,12 +135,12 @@ def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
 	Image.resetRoi()
 	return OutputDict
 
-def getProjectedBeads(Imp, *kwargs):
+def getProjectedBeads(Imp, **kwargs):
 	"""Takes a bead image z-stack and returns the rois of beads from a max intensity projected image. 
 
 	Args:
 		Imp (ij.ImagePlus): Beads z-stack image
-		*kwargs: Additional arguments for the analyzeParticles function
+		**kwargs: Additional arguments for the analyzeParticles function
 
 	Returns:
 		[ij.gui.Roi]: List of ROIs corresponding to the beads in the projected image
@@ -151,7 +151,7 @@ def getProjectedBeads(Imp, *kwargs):
 	# Thresholds the image to get the ladder
 	omero_microscope_qc._java["IJ"].setAutoThreshold(Projected, "Otsu dark")
 	omero_microscope_qc._java["IJ"].run(Projected, "Convert to Mask", "")
-	RoiList = analyzeParticles(Projected, *kwargs)
+	RoiList = analyzeParticles(Projected, **kwargs)
 	Projected.close()
 	return RoiList
 	
