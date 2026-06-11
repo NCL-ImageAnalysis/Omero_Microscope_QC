@@ -1,5 +1,5 @@
 [project]
-name = "omero_microscope_qc"
+name = "omero-microscope-qc"
 version = "1.0.0"
 authors = [
   { name="James Grimshaw", email="james.grimshaw@ncl.ac.uk" },

@@ -3,7 +3,7 @@ Usage
 
 OMERO Setup
 -----------
-omero_microscope_qc uses OMERO to access images and metadata, as well as for storage of its outputs. 
+omero-microscope-qc uses OMERO to access images and metadata, as well as for storage of its outputs. 
 
 It expects a structure of:
 

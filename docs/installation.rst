@@ -3,7 +3,7 @@ Installation
 
 System Requirements
 ~~~~~~~~~~~~~~~~~~~
-Requires an operating system with a GUI interface. Unfortunately due to requirements of MetroloJ_QC omero_microscope_qc cannot be run fully headlessly.
+Requires an operating system with a GUI interface. Unfortunately due to requirements of MetroloJ_QC omero-microscope-qc cannot be run fully headlessly.
 
 Currently only Windows devices have been tested but it should be compatible with Mac OS and Linux (please let us know if these work for you and we can update our documentation).
 
@@ -32,7 +32,7 @@ This will create your environments and install pyImageJ and java requirements. F
 
 To install omero-py you will need to first install ZeroC IcePy 3.6 python bindings. Details for how to do this can be found on omero-py's GitHub: https://github.com/ome/omero-py
 
-When that is installed you can then install omero_microscope_qc and all remaining requirements.
+When that is installed you can then install omero-microscope-qc and all remaining requirements.
 
 If you have git installed this can be done with:
 
@@ -48,7 +48,7 @@ Otherwise you can download the repository, navigate to where the folder is extra
 
 Fiji/MetroloJ_QC installation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-omero_microscope_qc requires a working Fiji installation with MetroloJ_QC installed into Fiji's plugin folder.
+omero-microscope-qc requires a working Fiji installation with MetroloJ_QC installed into Fiji's plugin folder.
 
 You can download Fiji from: https://fiji.sc/ and the MetroloJ_QC jar file from its GitHub repository here: https://github.com/MontpellierRessourcesImagerie/MetroloJ_QC
 

@@ -32,7 +32,7 @@ This will create your environments and install pyImageJ and java requirements. F
 
 To install omero-py you will need to first install ZeroC IcePy 3.6 python bindings. Details for how to do this can be found on omero-py's GitHub: https://github.com/ome/omero-py
 
-When that is installed you can then install omero_microscope_qc and all remaining requirements.
+When that is installed you can then install omero-microscope-qc and all remaining requirements.
 
 If you have git installed this can be done with:
 
@@ -55,7 +55,7 @@ It is possible to install without pyImageJ in order to just use the omero helper
     pip install .[imagej]
 
 ## OMERO Setup
-omero_microscope_qc uses OMERO to access images and metadata, as well as for storage of its outputs. 
+omero-microscope-qc uses OMERO to access images and metadata, as well as for storage of its outputs. 
 
 It expects a structure of:
 
