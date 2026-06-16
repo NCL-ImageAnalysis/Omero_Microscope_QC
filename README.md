@@ -47,7 +47,13 @@ omero_microscope_qc requires a working Fiji installation with MetroloJ_QC instal
 
 You can download Fiji from: https://fiji.sc/ and the MetroloJ_QC jar file from its GitHub repository here: https://github.com/MontpellierRessourcesImagerie/MetroloJ_QC
 
-After Fiji has been unzipped from its archive download the MetroloJ_QC jar file to its plugin folder. Currently this has been tested on MetroloJ_QC v1.3.1.2
+After Fiji has been unzipped from its archive, download the MetroloJ_QC jar file to the Fiji plugins folder.
+
+Full installation instructions for MetroloJ_QC can be found here:
+
+https://github.com/MontpellierRessourcesImagerie/MetroloJ_QC/blob/Current_version/manual.pdf
+
+Currently this has been tested on MetroloJ_QC v1.3.1.2
 
 ### Installation without pyImageJ/MetroloJ
 It is possible to install without pyImageJ in order to just use the omero helper functions. pyimagej is only a requirement if you add \[imagej\] to your pip install command e.g.
