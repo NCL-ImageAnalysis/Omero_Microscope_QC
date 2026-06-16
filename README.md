@@ -38,7 +38,7 @@ If you have git installed this can be done with:
 
     pip install git+https://github.com/NCL-ImageAnalysis/Omero_Microscope_QC.git
 
-Otherwise you can download the repository, navigate to where the folder is extracted and install with
+Otherwise you can download the repository, navigate into the extracted Omero_Microscope_QC-main directory, and install with
 
     pip install .
 
