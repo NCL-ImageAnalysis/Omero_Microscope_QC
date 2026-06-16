@@ -8,7 +8,7 @@ It uses [OMERO](https://www.openmicroscopy.org/omero/) and the ImageJ plugin [Me
 
 ## Installation
 ### System Requirements
-Requires an operating system with a GUI interface. Unfortunately due to requirements of MetroloJ_QC omero_microscope_qc cannot be run fully headlessly.
+Requires an operating system with a GUI interface. Unfortunately due to requirements of MetroloJ_QC, omero_microscope_qc cannot be run fully headlessly.
 
 Currently only Windows devices have been tested but it should be compatible with Mac OS and Linux (please let us know if these work for you and we can update our documentation).
 
@@ -38,7 +38,7 @@ If you have git installed this can be done with:
 
     pip install git+https://github.com/NCL-ImageAnalysis/Omero_Microscope_QC.git
 
-Otherwise you can download the repository, navigate to where the folder is extracted and install with
+Otherwise you can download the repository, navigate into the extracted Omero_Microscope_QC-main directory, and install with
 
     pip install .
 
