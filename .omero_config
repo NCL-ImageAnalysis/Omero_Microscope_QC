@@ -1,5 +1,5 @@
 {
-	"hostname": "Input Hostname of OMERO Server",
+	"hostname": "Input Hostname of OMERO Server, do not include https",
 	"username": "Input Username",
 	"password": "Input Password",
 	"fiji_path": "path to fiji with metroloJ installed. If on windows requires \\ e.g. C:\\Users\\Test\\Fiji"
