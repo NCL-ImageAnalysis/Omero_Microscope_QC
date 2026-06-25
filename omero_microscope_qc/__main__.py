@@ -7,8 +7,8 @@ import click
 import pathlib
 import shutil
 import Ice
-import traceback
 import logging
+from datetime import datetime
 
 def Bool_or_Missing(dict_item, key):
 	if key not in dict_item:
@@ -181,8 +181,26 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 @click.option("--clear_local_output", default=False, is_flag=True, help="Whether to clear the local output directory after processing each image.")
 @click.option("--memory", default="6g", type=str, help="Amount of memory to allocate to Fiji (e.g. '6g' for 6 gigabytes).")
 @click.option("--debug", default=False, is_flag=True, help="Whether to run in debug mode, which will print full tracebacks.")
+@click.option("--log_level", default="INFO", type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]), help="Set the logging level for the script.")
+@click.option("--log_files", default=None, type=click.Path(dir_okay=True, file_okay=True, writable=True), help="Path to a log file to write logs to. If not provided, logs will be printed to the console.")
+@click.option("--verbose", is_flag=True, help="Print output messages to the console.")
 
-def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accuracy_name, thresholding_method, center_dectection_method, save_pdf, save_csv, save_images, clear_local_output, memory, debug):
+def main(output_directory, config_path, coreg_name, psf_name, drift_name, 
+		 z_accuracy_name, thresholding_method, center_dectection_method, 
+		 save_pdf, save_csv, save_images, clear_local_output, memory, 
+		 debug, log_level, log_files, verbose):
+	
+	handlers = []
+	if verbose:
+		handlers.append(logging.StreamHandler())
+
+	if log_files:
+		if os.path.isdir(log_files):
+			log_files = os.path.join(log_files, f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+		handlers.append(logging.FileHandler(log_files))
+	
+	logging.basicConfig(level=getattr(logging, log_level), handlers=handlers, format='%(asctime)s - %(levelname)s - %(message)s')
+	
 	# Gets connection details and Fiji path from config file
 	with open(config_path, "r") as f:
 		config = json.load(f)
@@ -192,31 +210,27 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	fiji_path = config["fiji_path"]
 	conn_params = (omero_hostname, omero_username, omero_password)
 
-	# Sets logging level for omero.gateway to CRITICAL to suppress connection lost error messages unless in debug mode, where full tracebacks will be printed
-	if not debug:
-		logging.getLogger("omero.gateway").setLevel(logging.CRITICAL)
-
 	# Connects to the OMERO server
 	try:
 		conn = omero_objects.connect(*conn_params)
 	except ConnectionError:
-		print("Failed to connect to OMERO server. Please check your credentials and connection details.")
+		logging.error("Failed to connect to OMERO server. Please check your credentials and connection details.")
 		return
 	
 	# Checks that the Fiji path is a valid directory before attempting to initialise Fiji
 	if not pathlib.Path(fiji_path).is_dir():
-		print(f"Fiji path {fiji_path} is not a directory. Please check the path in the config file.")
+		logging.error(f"Fiji path {fiji_path} is not a directory. Please check the path in the config file.")
 		conn.close()
 		return
 	
-	print ("Initialising Fiji...")
+	logging.info("Initialising Fiji...")
 	try:
 		omero_microscope_qc.initialise(fiji_path, mode="interactive", memory=memory)
 	except RuntimeError as e:
-		print(f"Failed to initialise Fiji. Please check the Fiji path and ensure it is correct.")
+		logging.error(f"Failed to initialise Fiji. Please check the Fiji path and ensure it is correct.")
 		conn.close()
 		return
-	print("Fiji initialised successfully.")
+	logging.info("Fiji initialised successfully.")
 	
 	# Dictionary to map dataset names to method names for processing
 	to_method_name = {coreg_name: "registration", psf_name: "psf", drift_name: "drift", z_accuracy_name: "z_accuracy"}
@@ -231,11 +245,11 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 		for dataset in project.children:
 			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name]:
 				to_process += [image for image in dataset.children if not Bool_or_Missing(image.key_value_pairs, "QC_Processed") and not Bool_or_Missing(image.key_value_pairs, "Skip_Analysis")]
-	print(f"Found {len(to_process)} images to process.")
-	print(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
-	print(f"PSF: {len([image for image in to_process if image.parent.name == psf_name])}")
-	print(f"Drift: {len([image for image in to_process if image.parent.name == drift_name])}")
-	print(f"Z-Accuracy: {len([image for image in to_process if image.parent.name == z_accuracy_name])}")
+	logging.info(f"Found {len(to_process)} images to process.")
+	logging.info(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
+	logging.info(f"PSF: {len([image for image in to_process if image.parent.name == psf_name])}")
+	logging.info(f"Drift: {len([image for image in to_process if image.parent.name == drift_name])}")
+	logging.info(f"Z-Accuracy: {len([image for image in to_process if image.parent.name == z_accuracy_name])}")
 
 	for index, image in enumerate(to_process):
 		try:
@@ -254,7 +268,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 										  save_csv=save_csv, 
 										  save_images=save_images)
 			except (ConnectionError, Ice.ConnectionLostException):
-				print("Connection to OMERO server lost. Attempting to reconnect and retry...")
+				logging.error("Connection to OMERO server lost. Attempting to reconnect and retry...")
 				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
 				image_output_directory = run_analysis(image, 
 										  output_directory, 
@@ -275,7 +289,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 				# Marks the image as being successfully processed
 				image.add_key_values(conn, {"QC_Processed": "True"}, namespace="QC")
 			except (ConnectionError, Ice.ConnectionLostException):
-				print("Connection to OMERO server lost while attaching results. Attempting to reconnect and retry...")
+				logging.error("Connection to OMERO server lost while attaching results. Attempting to reconnect and retry...")
 				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 				# Marks the image as being successfully processed
@@ -283,10 +297,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 		# If any error occurs during processing or attaching results for an image, it will be caught here and printed out, 
 		# but the script will continue to the next image rather than stopping completely. 
 		except Exception as e:
-			print(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}")
-			# Only prints out full traceback when in debug mode
-			if debug:
-				traceback.print_exc()
+			logging.error(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}", exc_info=debug)
 		# Ensures that the image is closed after processing to free up memory, even if an error occurs
 		finally:
 			image.close()
@@ -298,7 +309,8 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 	# ImageJ has a tendency to keep running causing script to never terminate properly
 	# This will basically escilate up options for quitting ImageJ and the script, starting with the normal dispose method, then sys.exit() and finally os._exit() if needed to force quit without cleanup.
 	try:
-		print("All images processed. Closing connection to OMERO server.")
+		logging.info("All images processed. Closing connection to OMERO server.")
+		print("Done")
 		conn.close()
 		omero_microscope_qc._ij.dispose()
 		sys.exit(0)
