@@ -230,7 +230,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name, z_accu
 		project = omero_objects.OmeroObject.from_omero_entity(microscope_project)
 		for dataset in project.children:
 			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name]:
-				to_process += [image for image in dataset.children if not Bool_or_Missing(image.key_value_pairs, "QC_Processed")]
+				to_process += [image for image in dataset.children if not Bool_or_Missing(image.key_value_pairs, "QC_Processed") and not Bool_or_Missing(image.key_value_pairs, "Skip_Analysis")]
 	print(f"Found {len(to_process)} images to process.")
 	print(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
 	print(f"PSF: {len([image for image in to_process if image.parent.name == psf_name])}")
