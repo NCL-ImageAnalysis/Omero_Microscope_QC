@@ -8,6 +8,7 @@ import pathlib
 import shutil
 import Ice
 import logging
+import traceback
 from datetime import datetime
 
 def Bool_or_Missing(dict_item, key):
@@ -298,6 +299,13 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 		# but the script will continue to the next image rather than stopping completely. 
 		except Exception as e:
 			logging.error(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}", exc_info=debug)
+			# Writes the error message and traceback to a log file in the output directory, attaches it to the image, and then removes the log file from the local system.
+			error_log_path = pathlib.Path(output_directory) / "error_log.txt"
+			with open(error_log_path, "w") as error_log:
+				error_log.write(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}\n")
+				error_log.write(traceback.format_exc())
+			image.attach_annotation(conn, str(error_log_path), f"qc.{method}")
+			os.remove(error_log_path)  # Remove the error log file after attaching it to the image
 		# Ensures that the image is closed after processing to free up memory, even if an error occurs
 		finally:
 			image.close()
