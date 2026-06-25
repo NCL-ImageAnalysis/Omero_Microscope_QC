@@ -8,6 +8,7 @@ These values have specific uses by omero_microscope_qc module
 | Key | Value Type | Accepted Values | Description |
 | --- | ---------- | --------------- | ----------- |
 | QC_Processed | Boolean | True, False | Automatically populated by omero_microscope_qc when analysis has been completed. |
+| Skip_Analysis | Boolean | True, False | Skips analysis for images annotated with this key value |
 | microscope_type | Text | WideField, CLSM, Spinning Disc Confocal, Multiphoton | Type of microscope |
 | pinhole_size_AU | Number | Any Number | Pinhole size set in Airy Units. Required for CLSM microscopes |
 | use_rois | Boolean | True, False | Whether to process using OMERO ROIs or the entire image |
