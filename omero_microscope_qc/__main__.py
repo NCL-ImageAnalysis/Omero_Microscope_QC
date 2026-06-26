@@ -288,13 +288,13 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 			try:
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 				# Marks the image as being successfully processed
-				image.add_key_values(conn, {"QC_Processed": "True"}, namespace="QC")
+				image.add_key_values(conn, {"QC_Processed": "True"}, namespace="qc.status")
 			except (ConnectionError, Ice.ConnectionLostException):
 				logging.error("Connection to OMERO server lost while attaching results. Attempting to reconnect and retry...")
 				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 				# Marks the image as being successfully processed
-				image.add_key_values(conn, {"QC_Processed": "True"}, namespace="QC")
+				image.add_key_values(conn, {"QC_Processed": "True"}, namespace="qc.status")
 		# If any error occurs during processing or attaching results for an image, it will be caught here and printed out, 
 		# but the script will continue to the next image rather than stopping completely. 
 		except Exception as e:
