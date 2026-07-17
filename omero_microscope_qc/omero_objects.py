@@ -2,11 +2,14 @@ import os
 import numpy as np
 import xarray
 import itertools
+import logging
 import omero_microscope_qc
 
 import omero
 from omero import gateway
 from omero.rtypes import rdouble
+
+logger = logging.getLogger(__name__)
 
 def connect(hostname, username, password, *, keep_alive=None, secure=None, port=None):
 	"""
@@ -25,6 +28,7 @@ def connect(hostname, username, password, *, keep_alive=None, secure=None, port=
 	if port is not None:
 		gateway_kwargs["port"] = int(port)
 
+	logger.info(f"Connecting to OMERO server at {hostname} as user {username}")
 	conn = gateway.BlitzGateway(username, password, **gateway_kwargs)
 	conn.connect()
 	if keep_alive:
@@ -34,7 +38,7 @@ def connect(hostname, username, password, *, keep_alive=None, secure=None, port=
 	except omero.ClientError:
 		conn.close()
 		raise ConnectionError("Failed to connect to OMERO server. Please check your credentials and connection details.")
-	print (f"Connected to OMERO server at {hostname} as user {username}")
+	logger.info(f"Connected to OMERO server at {hostname} as user {username}")
 	return conn
 
 def download_annotation_file(annotation_file, output_directory):
