@@ -3,6 +3,7 @@ import numpy as np
 import xarray
 import itertools
 import logging
+import traceback
 import omero_microscope_qc
 
 import omero
@@ -217,9 +218,9 @@ class ParentObject(OmeroObject):
 		for child in omero_entity.listChildren():
 			try:
 				self.children.append(OmeroObject.from_omero_entity(child, parent=self))
-			except:
-				logger.error(f"Failed to load child: {child.getName()}")
-		# self.children = [OmeroObject.from_omero_entity(child, parent=self) for child in omero_entity.listChildren()]
+			except Exception as e:
+				logger.error(f"Failed to load child: {child.getName()}. Error: {str(e)}")
+				logger.debug(traceback.format_exc())
 
 class ImageObject(OmeroObject):
 	"""Class for OMERO image objects.
