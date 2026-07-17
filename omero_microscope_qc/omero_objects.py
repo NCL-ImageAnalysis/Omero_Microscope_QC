@@ -275,12 +275,24 @@ class ImageObject(OmeroObject):
 		self.dim_order = "TCZYX"
 		self.acquisition_date = image.getAcquisitionDate()
 		# Used to get objective information for metroloJ
-		self.objective = image.getObjectiveSettings()
-		# Immersion refractive index
-		self.refractive_index = self.objective.getRefractiveIndex()
-		self.NA = self.objective.getObjective().getLensNA()
-		# Channel information is stored as their own OmeroObjects
-		self.channels = [ChannelObject(ch) for ch in image.getChannels()]
+		try:
+			self.objective = image.getObjectiveSettings()
+			# Immersion refractive index
+			self.refractive_index = self.objective.getRefractiveIndex()
+			self.NA = self.objective.getObjective().getLensNA()
+		except Exception as e:
+			self.objective = None
+			self.refractive_index = None
+			self.NA = None
+			logger.warning(f"Objective information not available for image {self.name} (ID: {self.id})")
+			logger.debug(traceback.format_exc())
+		try:
+			# Channel information is stored as their own OmeroObjects
+			self.channels = [ChannelObject(ch) for ch in image.getChannels()]
+		except Exception as e:
+			self.channels = None
+			logger.warning(f"Channel information not available for image {self.name} (ID: {self.id})")
+			logger.debug(traceback.format_exc())
 		self.shape = (self.size_t, self.size_c, self.size_z, self.size_y, self.size_x)
 		# Rois are stored as their own OmeroObjects and linked to the image object as their parent.
 		self.rois = [RoiObject(roi, parent=self) for roi in image.getROIs()]
