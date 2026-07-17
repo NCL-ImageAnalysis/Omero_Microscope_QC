@@ -213,7 +213,13 @@ class ParentObject(OmeroObject):
 			parent (OmeroObject, optional): Parent of the object e.g. a dataset or project. Defaults to None.
 		"""
 		super().__init__(omero_entity, parent=parent)
-		self.children = [OmeroObject.from_omero_entity(child, parent=self) for child in omero_entity.listChildren()]
+		self.children = []
+		for child in omero_entity.listChildren():
+			try:
+				self.children.append(OmeroObject.from_omero_entity(child, parent=self))
+			except:
+				logger.error(f"Failed to load child: {child.getName()}")
+		# self.children = [OmeroObject.from_omero_entity(child, parent=self) for child in omero_entity.listChildren()]
 
 class ImageObject(OmeroObject):
 	"""Class for OMERO image objects.
