@@ -299,6 +299,8 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 		# but the script will continue to the next image rather than stopping completely. 
 		except Exception as e:
 			logging.error(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}", exc_info=debug)
+			# Searchable key value pair to find errors
+			image.add_key_values(conn, {"QC_Error": "True"}, namespace="qc.status")
 			# Writes the error message and traceback to a log file in the output directory, attaches it to the image, and then removes the log file from the local system.
 			error_log_path = pathlib.Path(output_directory) / "error_log.txt"
 			with open(error_log_path, "w") as error_log:
