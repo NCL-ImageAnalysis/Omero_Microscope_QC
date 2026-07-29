@@ -111,10 +111,11 @@ def initialize_MetroloJDialog(method,
 	# Adding metadata from Omero
 	Dialog.NA = image.NA
 	Dialog.refractiveIndex = image.refractive_index
-	if microscope_index == 1:  # CLSM
-		Dialog.emWavelengths = [ch.emission_wave for ch in image.channels]
-	Dialog.exWavelengths = [ch.excitation_wave for ch in image.channels]
-
+	if microscope_index == 0:  # Widefield
+		Dialog.exWavelengths = 500 # dummy value for missing data, not needed for widefield analysis
+	else:
+		Dialog.exWavelengths = [ch.excitation_wave for ch in image.channels]
+	Dialog.emWavelengths = [ch.emission_wave for ch in image.channels]
 	Dialog.savePdf = save_pdf
 	Dialog.saveSpreadsheet = save_csv
 	Dialog.saveImages = save_images
