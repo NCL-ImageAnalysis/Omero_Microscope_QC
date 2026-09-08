@@ -168,8 +168,8 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 	return conn
 
 @click.command()
-@click.argument("output_directory", type=click.Path(file_okay=False, writable=True), default=".")
-@click.option("--config_path", type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True), required=True, help="Path to JSON config file containing OMERO connection details and Fiji path.")
+@click.argument("output_directory", type=click.Path(file_okay=False, writable=True, resolve_path=True), default=".")
+@click.option("--config_path", type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True, resolve_path=True), required=True, help="Path to JSON config file containing OMERO connection details and Fiji path.")
 @click.option("--coreg_name", default="Coregistration", help="Name of datasets containing coregistration images to look for in OMERO.")
 @click.option("--psf_name", default="PSF", help="Name of datasets containing PSF images to look for in OMERO.")
 @click.option("--drift_name", default="Stage", help="Name of datasets containing drift images to look for in OMERO.")
@@ -183,7 +183,7 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 @click.option("--memory", default="6g", type=str, help="Amount of memory to allocate to Fiji (e.g. '6g' for 6 gigabytes).")
 @click.option("--debug", default=False, is_flag=True, help="Whether to run in debug mode, which will print full tracebacks.")
 @click.option("--log_level", default="INFO", type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]), help="Set the logging level for the script.")
-@click.option("--log_files", default=None, type=click.Path(dir_okay=True, file_okay=True, writable=True), help="Path to a log file to write logs to. If not provided, logs will be printed to the console.")
+@click.option("--log_files", default=None, type=click.Path(dir_okay=True, file_okay=True, writable=True, resolve_path=True), help="Path to a log file to write logs to. If not provided, logs will be printed to the console.")
 @click.option("--verbose", is_flag=True, help="Print output messages to the console.")
 
 def main(output_directory, config_path, coreg_name, psf_name, drift_name, 
