@@ -1,6 +1,10 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "omero-microscope-qc"
-version = "1.0.0"
+dynamic = ["version"]
 authors = [
   { name="James Grimshaw", email="james.grimshaw@ncl.ac.uk" },
   { name="Nick Bailey", email="nick.bailey2@ncl.ac.uk" },
@@ -21,15 +25,13 @@ dependencies = [
 	"click",
 	"xarray"
 ]
-
 [project.optional-dependencies]
 imagej = [
   "pyimagej"
 ]
-
 [tool.setuptools]
 packages = ["omero_microscope_qc"]
-
+[tool.setuptools_scm]
 [project.urls]
 Homepage = "https://github.com/NCL-ImageAnalysis/Batch_QC"
 Issues = "https://github.com/NCL-ImageAnalysis/Batch_QC/issues"
