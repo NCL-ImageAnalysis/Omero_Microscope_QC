@@ -11,6 +11,16 @@ import logging
 import traceback
 from datetime import datetime
 
+def print_and_log(message, log_level=logging.INFO):
+	"""Prints a message to the console and logs it at the specified log level.
+
+	Args:
+		message (str): The message to print and log.
+		log_level (int): The logging level. Default is logging.INFO.
+	"""
+	print(message)
+	logging.log(log_level, message)
+
 def Bool_or_Missing(dict_item, key):
 	if key not in dict_item:
 		return False
@@ -25,6 +35,7 @@ def clear_empty_directories(path):
 	for root, dirs, files in os.walk(path, topdown=False):
 		rootpath = pathlib.Path(root)
 		if rootpath != path and not any(rootpath.iterdir()):
+			logging.debug(f"Removing empty directory: {rootpath}")
 			rootpath.rmdir()
 
 def run_analysis(image, output_directory, method, thresholding_method="Otsu", center_dectection_method="centroid", connection=None, save_pdf=False, save_csv=False, save_images=False):
@@ -52,6 +63,7 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 	project_name = image.parent.parent.name
 	dataset_name = image.parent.name
 	image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
+	logging.debug(f"Output directory for image {image.name} (ID: {image.id}): {image_output_directory}")
 	image_output_directory.mkdir(parents=True, exist_ok=True)
 	# Need a separator at the end of the output directory string for metroloJ
 	image_output_directory_str = str(image_output_directory) + os.path.sep
@@ -65,7 +77,7 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 				# Need connection to generate ROIs as this requires reloading the image in batches to access the pixel data
 				if connection is None:
 					raise ValueError("Connection object must be provided to generate ROIs.")
-				print(f"Generating ROIs for image {image.name} (ID: {image.id}).")
+				print_and_log(f"Generating ROIs for image {image.name} (ID: {image.id}).")
 				# Getting crop size in scaled units from key value pairs
 				try:
 					crop_size = float(image.key_value_pairs["crop_size"])
@@ -77,12 +89,12 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 				image.generate_bead_rois(crop_size, crop_size, connection)
 				# Skip if that step failed to generate any ROIs
 				if len(image.rois) == 0:
-					print(f"Failed to generate ROIs for image {image.name} (ID: {image.id}). Skipping analysis for this image.")
+					print_and_log(f"Failed to generate ROIs for image {image.name} (ID: {image.id}). Skipping analysis for this image.", log_level=logging.ERROR)
 					return None			
 			else:
 				# Skips analysis if no ROIs found but image is marked as using ROIs
-				print(f"Skipping image {image.name} (ID: {image.id}) as marked as using ROIs but no ROIs found.")
-				print(f"To generate ROIs for this image, add a key 'generate_rois' with value 'True' to the image key value pairs and ensure there is a key 'crop_size' with the desired crop size in scaled units as the value.")
+				print_and_log(f"Skipping image {image.name} (ID: {image.id}) as marked as using ROIs but no ROIs found.", log_level=logging.WARNING)
+				print_and_log(f"To generate ROIs for this image, add a key 'generate_rois' with value 'True' to the image key value pairs and ensure there is a key 'crop_size' with the desired crop size in scaled units as the value.", log_level=logging.WARNING)
 				return None
 		roi_list = image.rois
 	else:
@@ -101,8 +113,8 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 			save_suffix = ""
 		# Processing with metroloJ
 		if method in ["registration", "psf", "drift"]:
-			print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
-			print("Loading image data and initialising metroloJ dialog...")
+			print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
+			print_and_log("Loading image data and initialising metroloJ dialog...")
 			# Builds the dialog
 			Dialog = metroloJ_access.initialize_MetroloJDialog(
 				method,
@@ -112,12 +124,12 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 				save_pdf=save_pdf, 
 				save_csv=save_csv, 
 				save_images=save_images)
-			print("Running metroloJ analysis...")
+			print_and_log("Running metroloJ analysis...")
 			# Runs the actual analysis
 			ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory_str, image.name + save_suffix, image.acquisition_date)
 		# Processing with custom z accuracy script
 		elif method == "z_accuracy":
-			print(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
+			print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
 			z_accuracy.run_z_accuracy(image, image_output_directory_str, save_suffix=save_suffix)
 		else:
 			raise ValueError(f"Unknown method '{method}'. Method must be one of 'registration', 'psf', 'drift' or 'z_accuracy'.")
@@ -133,18 +145,21 @@ def attach_results(image, output_directory, connection, method, clear_local_outp
 		method (str): The method used for processing.
 		clear_local_output (bool, optional): Whether to clear the local output directory after processing. Defaults to False.
 	"""
-	print("Attaching results to OMERO...")
+	logging.debug(f"Attaching results for image {image.name} (ID: {image.id}) using method {method}.")
+	print_and_log("Attaching results to OMERO...")
 	# Walks through output directory and attaches all files to the image with a tag indicating the method used for processing
 	for root, dirs, files in os.walk(output_directory, topdown=False):
 		rootpath = pathlib.Path(root)
 		for f in files:
-			image.attach_annotation(connection, str(rootpath / f), f"qc.{method}")
+			filepath = str(rootpath / f)
+			logging.debug(f"Attaching file {filepath} to image {image.name} (ID: {image.id}).")
+			image.attach_annotation(connection, filepath, f"qc.{method}")
 
 	# If enabled, will clear the output directory after processing each image to save local storage space
 	if clear_local_output:
-		print("Clearing local output directory...")
+		print_and_log("Clearing local output directory...")
 		shutil.rmtree(output_directory)
-	print(f"Finished processing image {image.name} (ID: {image.id}).")
+	print_and_log(f"Finished processing image {image.name} (ID: {image.id}).")
 
 def reconnect_and_reload(image_list, connection_parameters, current_connection=None):
 	"""Attempts to reconnect to the OMERO server and reloads the given list of images. Should be used in the case of a lost connection to the OMERO server, which can happen if processing takes a long time."
@@ -164,6 +179,7 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 			pass
 	conn = omero_objects.connect(*connection_parameters)
 	for image in image_list:
+		logging.debug(f"Reloading image {image.name} (ID: {image.id}) after reconnecting to OMERO server.")
 		image.reload(conn)
 	return conn
 
@@ -246,11 +262,11 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 		for dataset in project.children:
 			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name]:
 				to_process += [image for image in dataset.children if not Bool_or_Missing(image.key_value_pairs, "QC_Processed") and not Bool_or_Missing(image.key_value_pairs, "Skip_Analysis")]
-	logging.info(f"Found {len(to_process)} images to process.")
-	logging.info(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
-	logging.info(f"PSF: {len([image for image in to_process if image.parent.name == psf_name])}")
-	logging.info(f"Drift: {len([image for image in to_process if image.parent.name == drift_name])}")
-	logging.info(f"Z-Accuracy: {len([image for image in to_process if image.parent.name == z_accuracy_name])}")
+	print_and_log(f"Found {len(to_process)} images to process.")
+	print_and_log(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
+	print_and_log(f"PSF: {len([image for image in to_process if image.parent.name == psf_name])}")
+	print_and_log(f"Drift: {len([image for image in to_process if image.parent.name == drift_name])}")
+	print_and_log(f"Z-Accuracy: {len([image for image in to_process if image.parent.name == z_accuracy_name])}")
 
 	for index, image in enumerate(to_process):
 		try:
@@ -290,7 +306,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 				# Marks the image as being successfully processed
 				image.add_key_values(conn, {"QC_Processed": "True"}, namespace="qc.status")
 			except (ConnectionError, Ice.ConnectionLostException):
-				logging.error("Connection to OMERO server lost while attaching results. Attempting to reconnect and retry...")
+				print_and_log("Connection to OMERO server lost while attaching results. Attempting to reconnect and retry...", log_level=logging.ERROR)
 				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 				# Marks the image as being successfully processed
@@ -319,8 +335,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 	# ImageJ has a tendency to keep running causing script to never terminate properly
 	# This will basically escilate up options for quitting ImageJ and the script, starting with the normal dispose method, then sys.exit() and finally os._exit() if needed to force quit without cleanup.
 	try:
-		logging.info("All images processed. Closing connection to OMERO server.")
-		print("Done")
+		print_and_log("All images processed. Closing connection to OMERO server.")
 		conn.close()
 		omero_microscope_qc._ij.dispose()
 		sys.exit(0)
