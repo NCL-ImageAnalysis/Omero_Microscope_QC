@@ -157,7 +157,6 @@ def execute_MetroloJ_process(Dialog, report_dir, report_name, aquisition_date):
 	if omero_microscope_qc._ij is None:
 		raise RuntimeError("ImageJ has not been initialised. Please call batch_qc.initialise() before use.")
 	image = Dialog.ip
-	image_title = image.getTitle()
 	try:
 		time_string = aquisition_date.strftime("%Y-%m-%d %H:%M:%S")
 	except AttributeError:
@@ -166,14 +165,14 @@ def execute_MetroloJ_process(Dialog, report_dir, report_name, aquisition_date):
 	coords = [omero_microscope_qc._java["Double"].NaN, omero_microscope_qc._java["Double"].NaN]
 	
 	if Dialog.reportType == "pp":
-		execution_instance = omero_microscope_qc._java["PSFprofiler"](image, Dialog, image_title, coords, creationInfo)
-		report_instance = omero_microscope_qc._java["PSFprofilerReport"](image, Dialog, image_title, coords, creationInfo)
+		execution_instance = omero_microscope_qc._java["PSFprofiler"](image, Dialog, "", coords, creationInfo)
+		report_instance = omero_microscope_qc._java["PSFprofilerReport"](image, Dialog, "", coords, creationInfo)
 	elif Dialog.reportType == "pos":
-		execution_instance = omero_microscope_qc._java["driftProfiler"](image, Dialog, image_title, coords, creationInfo)
-		report_instance = omero_microscope_qc._java["driftProfilerReport"](image, Dialog, image_title, coords, creationInfo)
+		execution_instance = omero_microscope_qc._java["driftProfiler"](image, Dialog, "", coords, creationInfo)
+		report_instance = omero_microscope_qc._java["driftProfilerReport"](image, Dialog, "", coords, creationInfo)
 	elif Dialog.reportType == "coa":
-		execution_instance = omero_microscope_qc._java["coAlignement"](image, Dialog, image_title, coords, creationInfo)
-		report_instance = omero_microscope_qc._java["coAlignementReport"](image, Dialog, image_title, coords, creationInfo)
+		execution_instance = omero_microscope_qc._java["coAlignement"](image, Dialog, "", coords, creationInfo)
+		report_instance = omero_microscope_qc._java["coAlignementReport"](image, Dialog, "", coords, creationInfo)
 	else:
 		raise NotImplementedError("Report types supported are PSF profiler, stage positioning and drift and co-registration")
 	
