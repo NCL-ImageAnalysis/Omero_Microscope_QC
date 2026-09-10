@@ -126,7 +126,7 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 				save_images=save_images)
 			print_and_log("Running metroloJ analysis...")
 			# Runs the actual analysis
-			ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory_str, image.name + save_suffix, image.acquisition_date)
+			ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory_str, save_suffix, image.acquisition_date)
 		# Processing with custom z accuracy script
 		elif method == "z_accuracy":
 			print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
