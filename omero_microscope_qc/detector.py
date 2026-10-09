@@ -1,4 +1,13 @@
-from NanoImagingPack import cal_readnoise # Need to figure out way to do this that doesn't error out if not installed and using other methods
+# NanoImagingPack is optional: if it is missing (or fails to import) the rest of the package still works,
+# but detector QC is disabled. Check NANOIMAGINGPACK_AVAILABLE before calling into this module.
+try:
+	from NanoImagingPack import cal_readnoise
+	NANOIMAGINGPACK_AVAILABLE = True
+	NANOIMAGINGPACK_IMPORT_ERROR = None
+except Exception as e:
+	cal_readnoise = None
+	NANOIMAGINGPACK_AVAILABLE = False
+	NANOIMAGINGPACK_IMPORT_ERROR = e
 from omero_microscope_qc import omero_objects
 import numpy as np
 
@@ -43,6 +52,7 @@ def dict_comparison_to_base(base_dict, comparison_dict_list):
 	return new_dict
 
 def run_cal_readnoise(bright_image, dark_image, export_path, save_images=True):
+	_require_nanoimagingpack()
 	kwargs = dict_comparison_to_base(_NANOIMAGING_DEFAULTS, [bright_image.key_value_pairs, dark_image.key_value_pairs])
 	kwargs["exportpath"] = export_path
 	bright_image_data = bright_image.image_data.to_numpy()[kwargs["skip_first"]:, 0, 0, :, :]
@@ -51,7 +61,16 @@ def run_cal_readnoise(bright_image, dark_image, export_path, save_images=True):
 	kwargs.pop("skip_first")
 	return cal_readnoise(bright_image_data, dark_image_data, **kwargs)
 
+def _require_nanoimagingpack():
+	if not NANOIMAGINGPACK_AVAILABLE:
+		raise ImportError(
+			"Detector QC requires NanoImagingPack, which could not be imported "
+			f"({NANOIMAGINGPACK_IMPORT_ERROR!r}). Install it with: "
+			"pip install git+https://github.com/bionanoimaging/NanoImagingPack.git"
+		) from NANOIMAGINGPACK_IMPORT_ERROR
+
 def run_detector(conn, image, image_output_directory_str, save_images=True):
+	_require_nanoimagingpack()
 	# Checks if the image has already been processed
 	# If so, returns None so annotations are not attempted to be uploaded
 	if omero_objects.Bool_or_Missing(image.key_value_pairs, "QC_Processed"):

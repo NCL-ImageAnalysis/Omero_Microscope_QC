@@ -248,6 +248,13 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 	
 	# Dictionary to map dataset names to method names for processing
 	to_method_name = {coreg_name: "registration", psf_name: "psf", drift_name: "drift", z_accuracy_name: "z_accuracy", detector_metrics_name: "detector"}
+	dataset_names = [coreg_name, psf_name, drift_name, z_accuracy_name, detector_metrics_name]
+	# Detector QC depends on the optional NanoImagingPack. If it is not installed, skip those images entirely
+	# rather than marking each one with QC_Error, as the problem is the local install not the images.
+	if not detector.NANOIMAGINGPACK_AVAILABLE:
+		print_and_log(f"NanoImagingPack could not be imported ({detector.NANOIMAGINGPACK_IMPORT_ERROR!r}). "
+					  f"Images in '{detector_metrics_name}' datasets will be skipped.", log_level=logging.WARNING)
+		dataset_names.remove(detector_metrics_name)
 
 	# Searches through all projects and datasets in OMERO to find images that need to be processed.
 	# This is based on whether they are in a dataset with an expected name and whether they have already been processed 
@@ -257,7 +264,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 	for microscope_project in conn.getObjects("Project"):
 		project = omero_objects.OmeroObject.from_omero_entity(microscope_project)
 		for dataset in project.children:
-			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name, detector_metrics_name]:
+			if dataset.name in dataset_names:
 				to_process += [image for image in dataset.children if not omero_objects.Bool_or_Missing(image.key_value_pairs, "QC_Processed") and not omero_objects.Bool_or_Missing(image.key_value_pairs, "Skip_Analysis")]
 	print_and_log(f"Found {len(to_process)} images to process.")
 	print_and_log(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
