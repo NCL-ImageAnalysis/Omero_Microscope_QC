@@ -126,7 +126,7 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 		# Processing with custom detector metrics script
 		elif method == "detector":
 			print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using detector method.")
-			image_output_directory = detector.run_detector(image, image_output_directory_str, save_suffix=save_suffix, save_images=save_images)
+			image_output_directory = detector.run_detector(connection, image, image_output_directory_str, save_suffix=save_suffix, save_images=save_images)
 		else:
 			raise ValueError(f"Unknown method '{method}'. Method must be one of 'registration', 'psf', 'drift' or 'z_accuracy'.")
 	return image_output_directory

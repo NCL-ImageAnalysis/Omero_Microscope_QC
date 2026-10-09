@@ -134,6 +134,16 @@ class OmeroObject:
 		# Updates the annotations of the object to include the new annotation
 		self.update_annotations()
 
+	def link_annotation(self, annotation):
+		"""Links an existing annotation to the object
+
+		Args:
+			annotation (omero.model.AnnotationI): Annotation to link to the object
+		"""
+		self.core.linkAnnotation(annotation)
+		# Updates the annotations of the object to include the new annotation
+		self.update_annotations()
+
 	def add_key_values(self, conn, key_values, namespace=None):
 		"""Adds key value pair to the omero object
 
