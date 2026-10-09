@@ -190,6 +190,8 @@ class OmeroObject:
 				self.key_value_pairs[k] = True
 			elif v == "False":
 				self.key_value_pairs[k] = False
+			elif v == "None":
+				self.key_value_pairs[k] = None
 	
 	def reload(self, connection):
 		"""Used to reload the object in case of connection loss
