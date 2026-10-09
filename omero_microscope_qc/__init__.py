@@ -1,6 +1,7 @@
 from . import metroloJ_access
 from . import omero_objects
 from . import z_accuracy
+from . import detector
 from . import imagej_utils
 
 try:
