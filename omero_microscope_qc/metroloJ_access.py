@@ -95,10 +95,8 @@ def initialize_MetroloJDialog(method,
 		if not image.size_t > 1:
 			raise ValueError(f"Image {image.name} (ID: {image.id}) requires a time series for drift analysis but sizeT is {image.size_t}.")
 
-	# Generates ImagePlus if not already generated, as this is needed for the MetroloJDialog
+	# ImagePlus is needed for the MetroloJDialog and is generated on access if not already generated
 	image_plus = image.image_plus
-	if image_plus is None:
-		image_plus = image.generate_ImagePlus()
 
 	# MetroloJDialog needs to be the active image in ImageJ, so sets the current image to the image plus of the image being analysed
 	omero_microscope_qc._java["WindowManager"].setTempCurrentImage(image_plus)
