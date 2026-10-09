@@ -41,8 +41,18 @@ def dict_comparison_to_base(base_dict, comparison_dict_list):
 def run_cal_readnoise(bright_image, dark_image, export_path):
 	kwargs = dict_comparison_to_base(_NANOIMAGING_DEFAULTS, [bright_image.key_value_pairs, dark_image.key_value_pairs])
 	kwargs["exportpath"] = export_path
-
 	bright_image_data = bright_image.image_data.to_numpy()[kwargs["skip_first"]:, 0, 0, :, :]
 	dark_image_data = dark_image.image_data.to_numpy()[kwargs["skip_first"]:, 0, 0, :, :]
 	kwargs.pop("skip_first")
 	return cal_readnoise(bright_image_data, dark_image_data, **kwargs)
+
+def run_detector(image, image_output_directory_str, save_suffix="", save_images=True):
+	dataset = image.parent
+	# To Do
+	# Check if already has been processed and if so return None
+	# Check if dataset has key value to tie to test date otherwise use aquisition date
+	# Check if partner has already been processed
+	# If so link its annotations to this image, set "QC_Processed": "True" and return None
+	# Check if dataset has key value listing as bright or dark images
+	# If not check if regex key value is present and match based on that
+	# If not check by checking which has higher mean intensity and assume that is bright image
