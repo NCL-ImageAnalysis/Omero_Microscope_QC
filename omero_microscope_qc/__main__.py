@@ -2,7 +2,7 @@ import json
 import sys
 import os
 import omero_microscope_qc
-from omero_microscope_qc import metroloJ_access, omero_objects, z_accuracy
+from omero_microscope_qc import metroloJ_access, omero_objects, z_accuracy, detector
 import click
 import pathlib
 import shutil
@@ -39,7 +39,7 @@ def clear_empty_directories(path):
 			rootpath.rmdir()
 
 def run_analysis(image, output_directory, method, thresholding_method="Otsu", center_dectection_method="centroid", connection=None, save_pdf=False, save_csv=False, save_images=False):
-	"""Run QC analysis on a single image using MetroloJ or z_accuracy methods, depending on the dataset it belongs to, and save the results to the specified output directory.
+	"""Run QC analysis on a single image using MetroloJ, z_accuracy or detector methods, depending on the dataset it belongs to, and save the results to the specified output directory.
 
 	Args:
 		image (batch_qc.omero_objects.ImageObject): Image to be processed.
@@ -131,6 +131,10 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 		elif method == "z_accuracy":
 			print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
 			z_accuracy.run_z_accuracy(image, image_output_directory_str, save_suffix=save_suffix)
+		# Processing with custom detector metrics script
+		elif method == "detector":
+			print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using detector method.")
+			image_output_directory = detector.run_detector(image, image_output_directory_str, save_suffix=save_suffix, save_images=save_images)
 		else:
 			raise ValueError(f"Unknown method '{method}'. Method must be one of 'registration', 'psf', 'drift' or 'z_accuracy'.")
 	return image_output_directory
@@ -190,6 +194,7 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 @click.option("--psf_name", default="PSF", help="Name of datasets containing PSF images to look for in OMERO.")
 @click.option("--drift_name", default="Stage", help="Name of datasets containing drift images to look for in OMERO.")
 @click.option("--z_accuracy_name", default="Z-drive", help="Name of datasets containing Z accuracy images to look for in OMERO.")
+@click.option("--detector_metrics_name", default="Detector", help="Name of datasets containing Z accuracy images to look for in OMERO.")
 @click.option("--thresholding_method", default="Otsu", type=click.Choice(["Legacy", "Li", "Minimum", "Otsu"]), help="Thresholding method to use for bead detection in MetroloJ.")
 @click.option("--center_dectection_method", default="centroid", type=click.Choice(["ellipses", "centroid", "max"]), help="Method to use for center detection in MetroloJ.")
 @click.option("--save_pdf/--no_save_pdf", default=True, help="Whether to save the MetroloJ report as a PDF and attach to OMERO.")
@@ -203,9 +208,9 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 @click.option("--verbose", is_flag=True, help="Print output messages to the console.")
 
 def main(output_directory, config_path, coreg_name, psf_name, drift_name, 
-		 z_accuracy_name, thresholding_method, center_dectection_method, 
-		 save_pdf, save_csv, save_images, clear_local_output, memory, 
-		 debug, log_level, log_files, verbose):
+		 z_accuracy_name, detector_metrics_name, thresholding_method, 
+		 center_dectection_method, save_pdf, save_csv, save_images, 
+		 clear_local_output, memory, debug, log_level, log_files, verbose):
 	
 	handlers = []
 	if verbose:
@@ -250,7 +255,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 	logging.info("Fiji initialised successfully.")
 	
 	# Dictionary to map dataset names to method names for processing
-	to_method_name = {coreg_name: "registration", psf_name: "psf", drift_name: "drift", z_accuracy_name: "z_accuracy"}
+	to_method_name = {coreg_name: "registration", psf_name: "psf", drift_name: "drift", z_accuracy_name: "z_accuracy", detector_metrics_name: "detector"}
 
 	# Searches through all projects and datasets in OMERO to find images that need to be processed.
 	# This is based on whether they are in a dataset with an expected name and whether they have already been processed 
@@ -260,13 +265,14 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 	for microscope_project in conn.getObjects("Project"):
 		project = omero_objects.OmeroObject.from_omero_entity(microscope_project)
 		for dataset in project.children:
-			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name]:
+			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name, detector_metrics_name]:
 				to_process += [image for image in dataset.children if not Bool_or_Missing(image.key_value_pairs, "QC_Processed") and not Bool_or_Missing(image.key_value_pairs, "Skip_Analysis")]
 	print_and_log(f"Found {len(to_process)} images to process.")
 	print_and_log(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
 	print_and_log(f"PSF: {len([image for image in to_process if image.parent.name == psf_name])}")
 	print_and_log(f"Drift: {len([image for image in to_process if image.parent.name == drift_name])}")
 	print_and_log(f"Z-Accuracy: {len([image for image in to_process if image.parent.name == z_accuracy_name])}")
+	print_and_log(f"Detector: {len([image for image in to_process if image.parent.name == detector_metrics_name])}")
 
 	for index, image in enumerate(to_process):
 		try:
