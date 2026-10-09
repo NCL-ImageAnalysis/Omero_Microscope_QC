@@ -1,4 +1,6 @@
 from NanoImagingPack import cal_readnoise # Need to figure out way to do this that doesn't error out if not installed and using other methods
+import omero_microscope_qc
+from omero_microscope_qc import omero_objects
 
 _NANOIMAGING_DEFAULTS = {
 	"skip_first" : 10,
@@ -47,10 +49,27 @@ def run_cal_readnoise(bright_image, dark_image, export_path):
 	return cal_readnoise(bright_image_data, dark_image_data, **kwargs)
 
 def run_detector(image, image_output_directory_str, save_suffix="", save_images=True):
+	if omero_objects.Bool_or_Missing(image.key_value_pairs, "QC_Processed"):
+		return None
 	dataset = image.parent
+	try:
+		n_partners = 0
+		test_index = image.key_value_pairs["test_identifier"]
+		for partner in dataset.children:
+			if partner.key_value_pairs.get("test_identifier") == test_index and partner.id != image.id:
+				partner_image = partner
+				n_partners += 1
+	except KeyError:
+		for partner in dataset.children:
+			if partner.acquisition_date == image.acquisition_date and partner.id != image.id:
+				partner_image = partner
+				n_partners += 1
+	if n_partners == 0:
+		raise ValueError(f"No partner image found for image {image.id} in dataset {dataset.id} during detector QC.")
+	if n_partners > 1:
+		raise ValueError(f"Multiple partner images found for image {image.id} in dataset {dataset.id} during detector QC.")
+
 	# To Do
-	# Check if already has been processed and if so return None
-	# Check if dataset has key value to tie to test date otherwise use aquisition date
 	# Check if partner has already been processed
 	# If so link its annotations to this image, set "QC_Processed": "True" and return None
 	# Check if dataset has key value listing as bright or dark images
