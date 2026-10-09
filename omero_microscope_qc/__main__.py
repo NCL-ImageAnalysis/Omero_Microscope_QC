@@ -20,14 +20,6 @@ def print_and_log(message, log_level=logging.INFO):
 	"""
 	print(message)
 	logging.log(log_level, message)
-
-def Bool_or_Missing(dict_item, key):
-	if key not in dict_item:
-		return False
-	if type(dict_item[key]) == bool:
-		return dict_item[key]
-	else:
-		raise ValueError(f"Key '{key}' found in key value pairs but value is of type {type(dict_item[key])} rather than bool.")
 	
 def clear_empty_directories(path):
 	if isinstance(path, str):
@@ -68,9 +60,9 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 	# Need a separator at the end of the output directory string for metroloJ
 	image_output_directory_str = str(image_output_directory) + os.path.sep
 
-	generate_rois = Bool_or_Missing(image.key_value_pairs, "generate_rois")
+	generate_rois = omero_objects.Bool_or_Missing(image.key_value_pairs, "generate_rois")
 	# Only will use/generate rois if it is in one of those two sets of key value pairs
-	if Bool_or_Missing(image.key_value_pairs, "use_rois") or generate_rois:
+	if omero_objects.Bool_or_Missing(image.key_value_pairs, "use_rois") or generate_rois:
 		# Rois are only generated if there are no existing rois
 		if len(image.rois) == 0:
 			if generate_rois:
@@ -266,7 +258,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 		project = omero_objects.OmeroObject.from_omero_entity(microscope_project)
 		for dataset in project.children:
 			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name, detector_metrics_name]:
-				to_process += [image for image in dataset.children if not Bool_or_Missing(image.key_value_pairs, "QC_Processed") and not Bool_or_Missing(image.key_value_pairs, "Skip_Analysis")]
+				to_process += [image for image in dataset.children if not omero_objects.Bool_or_Missing(image.key_value_pairs, "QC_Processed") and not omero_objects.Bool_or_Missing(image.key_value_pairs, "Skip_Analysis")]
 	print_and_log(f"Found {len(to_process)} images to process.")
 	print_and_log(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
 	print_and_log(f"PSF: {len([image for image in to_process if image.parent.name == psf_name])}")

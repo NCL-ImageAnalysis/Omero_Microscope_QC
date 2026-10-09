@@ -53,6 +53,14 @@ def download_annotation_file(annotation_file, output_directory):
 		for chunk in annotation_file.getFileInChunks():
 			f.write(chunk)
 
+def Bool_or_Missing(dict_item, key):
+	if key not in dict_item:
+		return False
+	if type(dict_item[key]) == bool:
+		return dict_item[key]
+	else:
+		raise ValueError(f"Key '{key}' found in key value pairs but value is of type {type(dict_item[key])} rather than bool.")
+
 class OmeroObject:
 	"""Base class for OMERO objects (images, datasets, projects).
 
