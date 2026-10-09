@@ -1,6 +1,6 @@
 from NanoImagingPack import cal_readnoise # Need to figure out way to do this that doesn't error out if not installed and using other methods
-import omero_microscope_qc
 from omero_microscope_qc import omero_objects
+import numpy as np
 
 _NANOIMAGING_DEFAULTS = {
 	"skip_first" : 10,
@@ -22,6 +22,8 @@ _NANOIMAGING_DEFAULTS = {
 	"saturationImage" : True,
 	}
 
+_MIN_FOLD_CHANGE = 10
+
 def dict_comparison_to_base(base_dict, comparison_dict_list):
 	errors = []
 	new_dict = {}
@@ -40,15 +42,16 @@ def dict_comparison_to_base(base_dict, comparison_dict_list):
 		raise ValueError(f"Key Value(s) {errors} have different values in bright and dark images")
 	return new_dict
 
-def run_cal_readnoise(bright_image, dark_image, export_path):
+def run_cal_readnoise(bright_image, dark_image, export_path, save_images=True):
 	kwargs = dict_comparison_to_base(_NANOIMAGING_DEFAULTS, [bright_image.key_value_pairs, dark_image.key_value_pairs])
 	kwargs["exportpath"] = export_path
 	bright_image_data = bright_image.image_data.to_numpy()[kwargs["skip_first"]:, 0, 0, :, :]
 	dark_image_data = dark_image.image_data.to_numpy()[kwargs["skip_first"]:, 0, 0, :, :]
+	kwargs["doPlot"] = save_images
 	kwargs.pop("skip_first")
 	return cal_readnoise(bright_image_data, dark_image_data, **kwargs)
 
-def run_detector(conn, image, image_output_directory_str, save_suffix="", save_images=True):
+def run_detector(conn, image, image_output_directory_str, save_images=True):
 	# Checks if the image has already been processed
 	# If so, returns None so annotations are not attempted to be uploaded
 	if omero_objects.Bool_or_Missing(image.key_value_pairs, "QC_Processed"):
@@ -85,7 +88,20 @@ def run_detector(conn, image, image_output_directory_str, save_suffix="", save_i
 		image.add_key_values(conn, {"QC_Processed": True}, namespace="qc.status")
 		return None
 
-	# To Do
-	# Check if dataset has key value listing as bright or dark images
-	# If not check if regex key value is present and match based on that
-	# If not check by checking which has higher mean intensity and assume that is bright image
+	bright_dark_images = {}
+	try:
+		bright_dark_images[image.key_value_pairs["bright_or_dark"]] = image
+		bright_dark_images[partner_image.key_value_pairs["bright_or_dark"]] = partner_image
+	except KeyError:
+		image_pair = [image, partner_image]
+		brightness = [imp.image_data.mean() for imp in image_pair]
+		fold_change = max(brightness) / min(brightness)
+		if fold_change < _MIN_FOLD_CHANGE:
+			raise ValueError(f"Images {image.id} and {partner_image.id} do not have a sufficient difference in brightness for detector QC. \
+			                 Minimum fold change is {_MIN_FOLD_CHANGE} but the fold change is {fold_change}")							 
+		bright_dark_images["bright"] = image_pair[np.argmax(brightness)]
+		bright_dark_images["dark"] = image_pair[np.argmin(brightness)]
+		bright_dark_images["bright"].add_key_values(conn, {"bright_or_dark": "bright"}, namespace="qc.params")
+		bright_dark_images["dark"].add_key_values(conn, {"bright_or_dark": "dark"}, namespace="qc.params")
+	run_cal_readnoise(bright_dark_images["bright"], bright_dark_images["dark"], image_output_directory_str, save_images=save_images)
+	return image_output_directory_str
