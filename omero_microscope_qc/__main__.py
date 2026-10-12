@@ -101,6 +101,7 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 			roi.load_tile_data()
 			# Needed so multiple duplicate outputs don't have the same name if there are multiple ROIs for an image
 			save_suffix = f"_ROI{roi.id}"
+			print_and_log(f"Processing ROI {roi.id} for image {image.name} (ID: {image.id}) from microscope {project_name}.")
 		else:
 			# No suffix needed if processing whole image
 			save_suffix = ""
