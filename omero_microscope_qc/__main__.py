@@ -137,10 +137,13 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 		except Exception as e:
 			if roi is not None:
 				print_and_log(f"Failed to process ROI {roi.id} for image {image.name} (ID: {image.id}) from microscope {project_name}. Error: {str(e)}", log_level=logging.ERROR)
-				return None
 			else:
 				raise e
-	return image_output_directory
+	if success:
+		return image_output_directory
+	else:
+		return None
+	
 
 def attach_results(image, output_directory, connection, method, clear_local_output=False):
 	"""Used to attach all files in a folder to an image in OMERO as annotations
