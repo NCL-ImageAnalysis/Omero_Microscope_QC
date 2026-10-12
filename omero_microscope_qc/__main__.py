@@ -95,8 +95,9 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 		roi_list = [None]
 
 	# Will still run analysis even if not using ROIs as have list with a None Value in in that case
+	last_error = None
+	success = False
 	for roi in roi_list:
-		success = False
 		try:
 			if roi is not None:
 				# Loads in just the roi tile into memory
@@ -138,10 +139,14 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 			if roi is not None:
 				print_and_log(f"Failed to process ROI {roi.id} for image {image.name} (ID: {image.id}) from microscope {project_name}. Error: {str(e)}", log_level=logging.ERROR)
 				print_and_log(traceback.format_exc(), log_level=logging.ERROR)
+				# Kept so it can be re-raised if no ROI succeeds (e is cleared after the except block)
+				last_error = e
 			else:
 				raise e
 	if success:
 		return image_output_directory
+	elif last_error is not None:
+		raise last_error
 	else:
 		return None
 	
