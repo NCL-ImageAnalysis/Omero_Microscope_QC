@@ -82,7 +82,8 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 				# Skip if that step failed to generate any ROIs
 				if len(image.rois) == 0:
 					print_and_log(f"Failed to generate ROIs for image {image.name} (ID: {image.id}). Skipping analysis for this image.", log_level=logging.ERROR)
-					return None			
+					return None	
+				print_and_log(f"Generated {len(image.rois)} ROIs for image {image.name} (ID: {image.id}).", log_level=logging.INFO)
 			else:
 				# Skips analysis if no ROIs found but image is marked as using ROIs
 				print_and_log(f"Skipping image {image.name} (ID: {image.id}) as marked as using ROIs but no ROIs found.", log_level=logging.WARNING)
@@ -196,7 +197,7 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 @click.option("--memory", default="6g", type=str, help="Amount of memory to allocate to Fiji (e.g. '6g' for 6 gigabytes). Default is '6g'.")
 @click.option("--debug", default=False, is_flag=True, help="Whether to run in debug mode, which will print full tracebacks. Default is False.")
 @click.option("--log_level", default="INFO", type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]), help="Set the logging level for the script. Default is 'INFO'.")
-@click.option("--log_files", default=None, type=click.Path(dir_okay=True, file_okay=True, writable=True, resolve_path=True), help="Path to a log file to write logs to. If not provided, logs will be printed to the console. Default is None.")
+@click.option("--log_files", default=None, type=click.Path(dir_okay=True, file_okay=True, writable=True, resolve_path=True), help="Path to a log file to write logs to. If a directory is provided, a new log file will be created in that directory with a timestamp. If not provided, logs will be printed to the console. Default is None.")
 @click.option("--verbose", is_flag=True, help="Print output messages to the console. Default is False.")
 
 def main(output_directory, config_path, coreg_name, psf_name, drift_name, 
@@ -323,7 +324,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 			# Searchable key value pair to find errors
 			image.add_key_values(conn, {"QC_Error": "True"}, namespace="qc.status")
 			# Writes the error message and traceback to a log file in the output directory, attaches it to the image, and then removes the log file from the local system.
-			error_log_path = pathlib.Path(output_directory) / "error_log.txt"
+			error_log_path = pathlib.Path(output_directory) / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{image.name}_error_log.txt"
 			with open(error_log_path, "w") as error_log:
 				error_log.write(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}\n")
 				error_log.write(traceback.format_exc())
