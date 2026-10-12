@@ -96,41 +96,50 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 
 	# Will still run analysis even if not using ROIs as have list with a None Value in in that case
 	for roi in roi_list:
-		if roi is not None:
-			# Loads in just the roi tile into memory
-			roi.load_tile_data()
-			# Needed so multiple duplicate outputs don't have the same name if there are multiple ROIs for an image
-			save_suffix = f"_ROI{roi.id}"
-			print_and_log(f"Processing ROI {roi.id} for image {image.name} (ID: {image.id}) from microscope {project_name}.")
-		else:
-			# No suffix needed if processing whole image
-			save_suffix = ""
-		# Processing with metroloJ
-		if method in ["registration", "psf", "drift"]:
-			print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
-			print_and_log("Loading image data and initialising metroloJ dialog...")
-			# Builds the dialog
-			Dialog = metroloJ_access.initialize_MetroloJDialog(
-				method,
-				image, 
-				thresholding_method=thresholding_method, 
-				center_dectection_method=center_dectection_method, 
-				save_pdf=save_pdf, 
-				save_csv=save_csv, 
-				save_images=save_images)
-			print_and_log("Running metroloJ analysis...")
-			# Runs the actual analysis
-			ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory_str, save_suffix, image.acquisition_date)
-		# Processing with custom z accuracy script
-		elif method == "z_accuracy":
-			print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
-			z_accuracy.run_z_accuracy(image, image_output_directory_str, save_suffix=save_suffix)
-		# Processing with custom detector metrics script
-		elif method == "detector":
-			print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using detector method.")
-			image_output_directory = detector.run_detector(connection, image, image_output_directory_str, save_images=save_images)
-		else:
-			raise ValueError(f"Unknown method '{method}'. Method must be one of 'registration', 'psf', 'drift' or 'z_accuracy'.")
+		success = False
+		try:
+			if roi is not None:
+				# Loads in just the roi tile into memory
+				roi.load_tile_data()
+				# Needed so multiple duplicate outputs don't have the same name if there are multiple ROIs for an image
+				save_suffix = f"_ROI{roi.id}"
+				print_and_log(f"Processing ROI {roi.id} for image {image.name} (ID: {image.id}) from microscope {project_name}.")
+			else:
+				# No suffix needed if processing whole image
+				save_suffix = ""
+			# Processing with metroloJ
+			if method in ["registration", "psf", "drift"]:
+				print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
+				print_and_log("Loading image data and initialising metroloJ dialog...")
+				# Builds the dialog
+				Dialog = metroloJ_access.initialize_MetroloJDialog(
+					method,
+					image, 
+					thresholding_method=thresholding_method, 
+					center_dectection_method=center_dectection_method, 
+					save_pdf=save_pdf, 
+					save_csv=save_csv, 
+					save_images=save_images)
+				print_and_log("Running metroloJ analysis...")
+				# Runs the actual analysis
+				ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory_str, save_suffix, image.acquisition_date)
+			# Processing with custom z accuracy script
+			elif method == "z_accuracy":
+				print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
+				z_accuracy.run_z_accuracy(image, image_output_directory_str, save_suffix=save_suffix)
+			# Processing with custom detector metrics script
+			elif method == "detector":
+				print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using detector method.")
+				image_output_directory = detector.run_detector(connection, image, image_output_directory_str, save_images=save_images)
+			else:
+				raise ValueError(f"Unknown method '{method}'. Method must be one of 'registration', 'psf', 'drift' or 'z_accuracy'.")
+			success = True
+		except Exception as e:
+			if roi is not None:
+				logging.error(f"Failed to process ROI {roi.id} for image {image.name} (ID: {image.id}) from microscope {project_name}. Error: {str(e)}", exc_info=True)
+				return None
+			else:
+				raise e
 	return image_output_directory
 
 def attach_results(image, output_directory, connection, method, clear_local_output=False):
