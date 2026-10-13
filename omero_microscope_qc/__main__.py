@@ -342,13 +342,13 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 			print_and_log(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}", log_level=logging.ERROR)
 			logging.error(traceback.format_exc())
 			# Searchable key value pair to find errors
-			image.add_key_values(conn, {"QC_Error": "True"}, namespace="qc.status")
+			image.add_key_values(conn, {"QC_Error": "True"}, namespace="qc.error")
 			# Writes the error message and traceback to a log file in the output directory, attaches it to the image, and then removes the log file from the local system.
 			error_log_path = pathlib.Path(output_directory) / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{image.name}_error_log.txt"
 			with open(error_log_path, "w") as error_log:
 				error_log.write(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}\n")
 				error_log.write(traceback.format_exc())
-			image.attach_annotation(conn, str(error_log_path), f"qc.{method}")
+			image.attach_annotation(conn, str(error_log_path), f"qc.error")
 			os.remove(error_log_path)  # Remove the error log file after attaching it to the image
 		# Ensures that the image is closed after processing to free up memory, even if an error occurs
 		finally:
