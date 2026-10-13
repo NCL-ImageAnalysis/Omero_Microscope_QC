@@ -319,7 +319,7 @@ class ImageObject(OmeroObject):
 				logger.debug(errors)
 		try:
 			# Channel information is stored as their own OmeroObjects
-			self.channels = [ChannelObject(ch) for ch in image.getChannels()]
+			self.channels = [ChannelObject(ch, i, parent=self) for i, ch in enumerate(image.getChannels())]
 		except Exception as e:
 			self.channels = None
 			logger.warning(f"Channel information not available for image {self.name} (ID: {self.id})")
@@ -476,16 +476,33 @@ class ChannelObject(OmeroObject):
 	:ivar emission_wave: Emission wavelength metadata from OMERO.
 	:ivar excitation_wave: Excitation wavelength metadata from OMERO.
 	:ivar mode: Channel mode string, or ``None`` if unavailable in metadata.
+	:ivar channel_number: The number of the channel in the image.
 	"""
-	def __init__(self, channel):
-		super().__init__(channel)
+	def __init__(self, channel, channel_number, parent=None):
+		super().__init__(channel, parent=parent)
+		self.channel_number = channel_number
 		self.emission_wave = channel.getEmissionWave()
+		if self.emmision_wave is None:
+			self.emmision_wave = self.parse_wavelengths(channel_number, "em_wavelengths")
 		self.excitation_wave = channel.getExcitationWave()
+		if self.excitation_wave is None:
+			self.excitation_wave = self.parse_wavelengths(channel_number, "ex_wavelengths")
+
 		# Mode is not really used as metadata parsing by OMERO often misses it
 		try:
 			self.mode = channel.getLogicalChannel().getMode().value
 		except AttributeError:
 			self.mode = None
+
+	def parse_wavelengths(self, index, key):
+		"Parses the wavelength information from the key value pairs if it is not available in the channel metadata"
+		try:
+			wave_string = self.parent.key_value_pairs[key]
+			wave_list = wave_string.split(",")
+			return float(wave_list[index])
+		except:
+			return None
+	
 	def attach_annotation(self, *args, **kwargs):
 		raise NotImplementedError("Attaching annotations to channels is not supported")
 
