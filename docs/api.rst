@@ -19,6 +19,11 @@ MetroloJ Access
 
 .. automodule:: omero_microscope_qc.metroloJ_access
 
+Detector
+~~~~~~~~~~~~~~~
+
+.. automodule:: omero_microscope_qc.detector
+
 ImageJ Utils
 ~~~~~~~~~~~~
 

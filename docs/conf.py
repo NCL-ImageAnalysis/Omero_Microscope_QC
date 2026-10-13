@@ -60,6 +60,7 @@ autodoc_mock_imports = [
     "click",
     "pandas",
     "networkx",
+    "NanoImagingPack"
 ]
 
 intersphinx_mapping = {
