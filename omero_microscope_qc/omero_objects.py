@@ -304,8 +304,8 @@ class ImageObject(OmeroObject):
 			errors = traceback.format_exc()
 			self.objective = None
 			try:
-				self.NA = image.key_value_pairs["NA"]
-				self.refractive_index = image.key_value_pairs["refractiveIndex"]
+				self.NA = float(image.key_value_pairs["NA"])
+				self.refractive_index = float(image.key_value_pairs["refractiveIndex"])
 			except KeyError:
 				self.refractive_index = None
 				self.NA = None
