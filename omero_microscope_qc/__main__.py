@@ -2,7 +2,7 @@ import json
 import sys
 import os
 import omero_microscope_qc
-from omero_microscope_qc import metroloJ_access, omero_objects, z_accuracy
+from omero_microscope_qc import metroloJ_access, omero_objects, z_accuracy, detector
 import click
 import pathlib
 import shutil
@@ -20,14 +20,6 @@ def print_and_log(message, log_level=logging.INFO):
 	"""
 	print(message)
 	logging.log(log_level, message)
-
-def Bool_or_Missing(dict_item, key):
-	if key not in dict_item:
-		return False
-	if type(dict_item[key]) == bool:
-		return dict_item[key]
-	else:
-		raise ValueError(f"Key '{key}' found in key value pairs but value is of type {type(dict_item[key])} rather than bool.")
 	
 def clear_empty_directories(path):
 	if isinstance(path, str):
@@ -39,7 +31,7 @@ def clear_empty_directories(path):
 			rootpath.rmdir()
 
 def run_analysis(image, output_directory, method, thresholding_method="Otsu", center_dectection_method="centroid", connection=None, save_pdf=False, save_csv=False, save_images=False):
-	"""Run QC analysis on a single image using MetroloJ or z_accuracy methods, depending on the dataset it belongs to, and save the results to the specified output directory.
+	"""Run QC analysis on a single image using MetroloJ, z_accuracy or detector methods, depending on the dataset it belongs to, and save the results to the specified output directory.
 
 	Args:
 		image (batch_qc.omero_objects.ImageObject): Image to be processed.
@@ -68,9 +60,9 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 	# Need a separator at the end of the output directory string for metroloJ
 	image_output_directory_str = str(image_output_directory) + os.path.sep
 
-	generate_rois = Bool_or_Missing(image.key_value_pairs, "generate_rois")
+	generate_rois = omero_objects.Bool_or_Missing(image.key_value_pairs, "generate_rois")
 	# Only will use/generate rois if it is in one of those two sets of key value pairs
-	if Bool_or_Missing(image.key_value_pairs, "use_rois") or generate_rois:
+	if omero_objects.Bool_or_Missing(image.key_value_pairs, "use_rois") or generate_rois:
 		# Rois are only generated if there are no existing rois
 		if len(image.rois) == 0:
 			if generate_rois:
@@ -90,7 +82,8 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 				# Skip if that step failed to generate any ROIs
 				if len(image.rois) == 0:
 					print_and_log(f"Failed to generate ROIs for image {image.name} (ID: {image.id}). Skipping analysis for this image.", log_level=logging.ERROR)
-					return None			
+					return None	
+				print_and_log(f"Generated {len(image.rois)} ROIs for image {image.name} (ID: {image.id}).", log_level=logging.INFO)
 			else:
 				# Skips analysis if no ROIs found but image is marked as using ROIs
 				print_and_log(f"Skipping image {image.name} (ID: {image.id}) as marked as using ROIs but no ROIs found.", log_level=logging.WARNING)
@@ -102,38 +95,61 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 		roi_list = [None]
 
 	# Will still run analysis even if not using ROIs as have list with a None Value in in that case
+	last_error = None
+	success = False
 	for roi in roi_list:
-		if roi is not None:
-			# Loads in just the roi tile into memory
-			roi.load_tile_data()
-			# Needed so multiple duplicate outputs don't have the same name if there are multiple ROIs for an image
-			save_suffix = f"_ROI{roi.id}"
-		else:
-			# No suffix needed if processing whole image
-			save_suffix = ""
-		# Processing with metroloJ
-		if method in ["registration", "psf", "drift"]:
-			print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
-			print_and_log("Loading image data and initialising metroloJ dialog...")
-			# Builds the dialog
-			Dialog = metroloJ_access.initialize_MetroloJDialog(
-				method,
-				image, 
-				thresholding_method=thresholding_method, 
-				center_dectection_method=center_dectection_method, 
-				save_pdf=save_pdf, 
-				save_csv=save_csv, 
-				save_images=save_images)
-			print_and_log("Running metroloJ analysis...")
-			# Runs the actual analysis
-			ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory_str, save_suffix, image.acquisition_date)
-		# Processing with custom z accuracy script
-		elif method == "z_accuracy":
-			print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
-			z_accuracy.run_z_accuracy(image, image_output_directory_str, save_suffix=save_suffix)
-		else:
-			raise ValueError(f"Unknown method '{method}'. Method must be one of 'registration', 'psf', 'drift' or 'z_accuracy'.")
-	return image_output_directory
+		try:
+			if roi is not None:
+				# Loads in just the roi tile into memory
+				roi.load_tile_data()
+				# Needed so multiple duplicate outputs don't have the same name if there are multiple ROIs for an image
+				save_suffix = f"_ROI{roi.id}"
+				print_and_log(f"Processing ROI {roi.id} for image {image.name} (ID: {image.id}) from microscope {project_name}.")
+			else:
+				# No suffix needed if processing whole image
+				save_suffix = ""
+			# Processing with metroloJ
+			if method in ["registration", "psf", "drift"]:
+				print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
+				print_and_log("Loading image data and initialising metroloJ dialog...")
+				# Builds the dialog
+				Dialog = metroloJ_access.initialize_MetroloJDialog(
+					method,
+					image, 
+					thresholding_method=thresholding_method, 
+					center_dectection_method=center_dectection_method, 
+					save_pdf=save_pdf, 
+					save_csv=save_csv, 
+					save_images=save_images)
+				print_and_log("Running metroloJ analysis...")
+				# Runs the actual analysis
+				ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory_str, save_suffix, image.acquisition_date)
+			# Processing with custom z accuracy script
+			elif method == "z_accuracy":
+				print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
+				z_accuracy.run_z_accuracy(image, image_output_directory_str, save_suffix=save_suffix)
+			# Processing with custom detector metrics script
+			elif method == "detector":
+				print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using detector method.")
+				image_output_directory = detector.run_detector(connection, image, image_output_directory_str, save_images=save_images)
+			else:
+				raise ValueError(f"Unknown method '{method}'. Method must be one of 'registration', 'psf', 'drift' or 'z_accuracy'.")
+			success = True
+		except Exception as e:
+			if roi is not None:
+				print_and_log(f"Failed to process ROI {roi.id} for image {image.name} (ID: {image.id}) from microscope {project_name}. Error: {str(e)}", log_level=logging.ERROR)
+				logging.error(traceback.format_exc())
+				# Kept so it can be re-raised if no ROI succeeds (e is cleared after the except block)
+				last_error = e
+			else:
+				raise e
+	if success:
+		return image_output_directory
+	elif last_error is not None:
+		raise last_error
+	else:
+		return None
+	
 
 def attach_results(image, output_directory, connection, method, clear_local_output=False):
 	"""Used to attach all files in a folder to an image in OMERO as annotations
@@ -186,26 +202,27 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 @click.command()
 @click.argument("output_directory", type=click.Path(file_okay=False, writable=True, resolve_path=True), default=".")
 @click.option("--config_path", type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True, resolve_path=True), required=True, help="Path to JSON config file containing OMERO connection details and Fiji path.")
-@click.option("--coreg_name", default="Coregistration", help="Name of datasets containing coregistration images to look for in OMERO.")
-@click.option("--psf_name", default="PSF", help="Name of datasets containing PSF images to look for in OMERO.")
-@click.option("--drift_name", default="Stage", help="Name of datasets containing drift images to look for in OMERO.")
-@click.option("--z_accuracy_name", default="Z-drive", help="Name of datasets containing Z accuracy images to look for in OMERO.")
-@click.option("--thresholding_method", default="Otsu", type=click.Choice(["Legacy", "Li", "Minimum", "Otsu"]), help="Thresholding method to use for bead detection in MetroloJ.")
-@click.option("--center_dectection_method", default="centroid", type=click.Choice(["ellipses", "centroid", "max"]), help="Method to use for center detection in MetroloJ.")
-@click.option("--save_pdf/--no_save_pdf", default=True, help="Whether to save the MetroloJ report as a PDF and attach to OMERO.")
-@click.option("--save_csv/--no_save_csv", default=True, help="Whether to save the MetroloJ results as a CSV and attach to OMERO.")
-@click.option("--save_images/--no_save_images", default=True, help="Whether to save the MetroloJ output images and attach to OMERO.")
-@click.option("--clear_local_output", default=False, is_flag=True, help="Whether to clear the local output directory after processing each image.")
-@click.option("--memory", default="6g", type=str, help="Amount of memory to allocate to Fiji (e.g. '6g' for 6 gigabytes).")
-@click.option("--debug", default=False, is_flag=True, help="Whether to run in debug mode, which will print full tracebacks.")
-@click.option("--log_level", default="INFO", type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]), help="Set the logging level for the script.")
-@click.option("--log_files", default=None, type=click.Path(dir_okay=True, file_okay=True, writable=True, resolve_path=True), help="Path to a log file to write logs to. If not provided, logs will be printed to the console.")
-@click.option("--verbose", is_flag=True, help="Print output messages to the console.")
+@click.option("--coreg_name", default="Coregistration", help="Name of datasets containing coregistration images to look for in OMERO. Default is 'Coregistration'.")
+@click.option("--psf_name", default="PSF", help="Name of datasets containing PSF images to look for in OMERO. Default is 'PSF'.")
+@click.option("--drift_name", default="Stage", help="Name of datasets containing drift images to look for in OMERO. Default is 'Stage'.")
+@click.option("--z_accuracy_name", default="Z-drive", help="Name of datasets containing Z accuracy images to look for in OMERO. Default is 'Z-drive'.")
+@click.option("--detector_metrics_name", default="Detector", help="Name of datasets containing Z accuracy images to look for in OMERO. Default is 'Detector'.")
+@click.option("--thresholding_method", default="Otsu", type=click.Choice(["Legacy", "Li", "Minimum", "Otsu"]), help="Thresholding method to use for bead detection in MetroloJ. Default is 'Otsu'.")
+@click.option("--center_dectection_method", default="centroid", type=click.Choice(["ellipses", "centroid", "max"]), help="Method to use for center detection in MetroloJ. Default is 'centroid'.")
+@click.option("--save_pdf/--no_save_pdf", default=True, help="Whether to save the MetroloJ report as a PDF and attach to OMERO. Default is save_pdf.")
+@click.option("--save_csv/--no_save_csv", default=True, help="Whether to save the MetroloJ results as a CSV and attach to OMERO. Default is save_csv.")
+@click.option("--save_images/--no_save_images", default=True, help="Whether to save the MetroloJ output images and attach to OMERO. Default is save_images.")
+@click.option("--clear_local_output", default=False, is_flag=True, help="Whether to clear the local output directory after processing each image. Default is False.")
+@click.option("--memory", default="6g", type=str, help="Amount of memory to allocate to Fiji (e.g. '6g' for 6 gigabytes). Default is '6g'.")
+@click.option("--debug", default=False, is_flag=True, help="Whether to run in debug mode, which will print full tracebacks. Default is False.")
+@click.option("--log_level", default="INFO", type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]), help="Set the logging level for the script. Default is 'INFO'.")
+@click.option("--log_files", default=None, type=click.Path(dir_okay=True, file_okay=True, writable=True, resolve_path=True), help="Path to a log file to write logs to. If a directory is provided, a new log file will be created in that directory with a timestamp. If not provided, logs will be printed to the console. Default is None.")
+@click.option("--verbose", is_flag=True, help="Print output messages to the console. Default is False.")
 
 def main(output_directory, config_path, coreg_name, psf_name, drift_name, 
-		 z_accuracy_name, thresholding_method, center_dectection_method, 
-		 save_pdf, save_csv, save_images, clear_local_output, memory, 
-		 debug, log_level, log_files, verbose):
+		 z_accuracy_name, detector_metrics_name, thresholding_method, 
+		 center_dectection_method, save_pdf, save_csv, save_images, 
+		 clear_local_output, memory, debug, log_level, log_files, verbose):
 	
 	handlers = []
 	if verbose:
@@ -240,17 +257,24 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 		conn.close()
 		return
 	
-	logging.info("Initialising Fiji...")
+	print_and_log("Initialising Fiji...", log_level=logging.INFO)
 	try:
 		omero_microscope_qc.initialise(fiji_path, mode="interactive", memory=memory)
 	except RuntimeError as e:
-		logging.error(f"Failed to initialise Fiji. Please check the Fiji path and ensure it is correct.")
+		print_and_log(f"Failed to initialise Fiji. Please check the Fiji path and ensure it is correct.", log_level=logging.ERROR)
 		conn.close()
 		return
-	logging.info("Fiji initialised successfully.")
+	print_and_log("Fiji initialised successfully.", log_level=logging.INFO)
 	
 	# Dictionary to map dataset names to method names for processing
-	to_method_name = {coreg_name: "registration", psf_name: "psf", drift_name: "drift", z_accuracy_name: "z_accuracy"}
+	to_method_name = {coreg_name: "registration", psf_name: "psf", drift_name: "drift", z_accuracy_name: "z_accuracy", detector_metrics_name: "detector"}
+	dataset_names = [coreg_name, psf_name, drift_name, z_accuracy_name, detector_metrics_name]
+	# Detector QC depends on the optional NanoImagingPack. If it is not installed, skip those images entirely
+	# rather than marking each one with QC_Error, as the problem is the local install not the images.
+	if not detector.NANOIMAGINGPACK_AVAILABLE:
+		print_and_log(f"NanoImagingPack could not be imported ({detector.NANOIMAGINGPACK_IMPORT_ERROR!r}). "
+					  f"Images in '{detector_metrics_name}' datasets will be skipped.", log_level=logging.WARNING)
+		dataset_names.remove(detector_metrics_name)
 
 	# Searches through all projects and datasets in OMERO to find images that need to be processed.
 	# This is based on whether they are in a dataset with an expected name and whether they have already been processed 
@@ -260,13 +284,14 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 	for microscope_project in conn.getObjects("Project"):
 		project = omero_objects.OmeroObject.from_omero_entity(microscope_project)
 		for dataset in project.children:
-			if dataset.name in [coreg_name, psf_name, drift_name, z_accuracy_name]:
-				to_process += [image for image in dataset.children if not Bool_or_Missing(image.key_value_pairs, "QC_Processed") and not Bool_or_Missing(image.key_value_pairs, "Skip_Analysis")]
+			if dataset.name in dataset_names:
+				to_process += [image for image in dataset.children if not omero_objects.Bool_or_Missing(image.key_value_pairs, "QC_Processed") and not omero_objects.Bool_or_Missing(image.key_value_pairs, "Skip_Analysis")]
 	print_and_log(f"Found {len(to_process)} images to process.")
 	print_and_log(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
 	print_and_log(f"PSF: {len([image for image in to_process if image.parent.name == psf_name])}")
 	print_and_log(f"Drift: {len([image for image in to_process if image.parent.name == drift_name])}")
 	print_and_log(f"Z-Accuracy: {len([image for image in to_process if image.parent.name == z_accuracy_name])}")
+	print_and_log(f"Detector: {len([image for image in to_process if image.parent.name == detector_metrics_name])}")
 
 	for index, image in enumerate(to_process):
 		try:
@@ -285,7 +310,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 										  save_csv=save_csv, 
 										  save_images=save_images)
 			except (ConnectionError, Ice.ConnectionLostException):
-				logging.error("Connection to OMERO server lost. Attempting to reconnect and retry...")
+				print_and_log("Connection to OMERO server lost. Attempting to reconnect and retry...", log_level=logging.ERROR)
 				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
 				image_output_directory = run_analysis(image, 
 										  output_directory, 
@@ -314,15 +339,16 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 		# If any error occurs during processing or attaching results for an image, it will be caught here and printed out, 
 		# but the script will continue to the next image rather than stopping completely. 
 		except Exception as e:
-			logging.error(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}", exc_info=debug)
+			print_and_log(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}", log_level=logging.ERROR)
+			logging.error(traceback.format_exc())
 			# Searchable key value pair to find errors
-			image.add_key_values(conn, {"QC_Error": "True"}, namespace="qc.status")
+			image.add_key_values(conn, {"QC_Error": "True"}, namespace="qc.error")
 			# Writes the error message and traceback to a log file in the output directory, attaches it to the image, and then removes the log file from the local system.
-			error_log_path = pathlib.Path(output_directory) / "error_log.txt"
+			error_log_path = pathlib.Path(output_directory) / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{image.name}_error_log.txt"
 			with open(error_log_path, "w") as error_log:
 				error_log.write(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}\n")
 				error_log.write(traceback.format_exc())
-			image.attach_annotation(conn, str(error_log_path), f"qc.{method}")
+			image.attach_annotation(conn, str(error_log_path), f"qc.error")
 			os.remove(error_log_path)  # Remove the error log file after attaching it to the image
 		# Ensures that the image is closed after processing to free up memory, even if an error occurs
 		finally:

@@ -1,4 +1,5 @@
 import omero_microscope_qc
+import logging
 
 def analyzeParticles(
 		Binary_Image,
@@ -196,6 +197,7 @@ def get_crop_roi_params(Imp, scaled_width, scaled_height):
 	width_px = round(Calibration.getRawX(scaled_width))
 	height_px = round(Calibration.getRawY(scaled_height))
 
+	logging.debug(f"Detecting beads using crop size of {width_px} x {height_px} pixels (scaled: {scaled_width} x {scaled_height})")
 	# Gets the rois of the beads in the projected image
 	RoiList = getProjectedBeads(Imp)
 	FilteredPointList = []
@@ -207,6 +209,7 @@ def get_crop_roi_params(Imp, scaled_width, scaled_height):
 		goodpoint = crop_points(Imp, [round(Centroid_dict["X"]), round(Centroid_dict["Y"])], width_px, height_px)
 		if goodpoint is not None:
 			FilteredPointList.append(goodpoint)
+			logging.debug(f"Bead detected at {goodpoint[0]}, {goodpoint[1]} with crop size {goodpoint[2]} x {goodpoint[3]}")
 	# Close the no scale crop to free up memory
 	NoScale.close()
 	return(FilteredPointList)

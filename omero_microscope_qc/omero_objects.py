@@ -1,9 +1,11 @@
 import os
+import re
 import numpy as np
 import xarray
 import itertools
 import logging
 import traceback
+from datetime import datetime
 import omero_microscope_qc
 
 import omero
@@ -52,6 +54,14 @@ def download_annotation_file(annotation_file, output_directory):
 	with open(os.path.join(output_directory, annotation_file.getName()), "wb") as f:
 		for chunk in annotation_file.getFileInChunks():
 			f.write(chunk)
+
+def Bool_or_Missing(dict_item, key):
+	if key not in dict_item:
+		return False
+	if type(dict_item[key]) == bool:
+		return dict_item[key]
+	else:
+		raise ValueError(f"Key '{key}' found in key value pairs but value is of type {type(dict_item[key])} rather than bool.")
 
 class OmeroObject:
 	"""Base class for OMERO objects (images, datasets, projects).
@@ -126,6 +136,16 @@ class OmeroObject:
 		# Updates the annotations of the object to include the new annotation
 		self.update_annotations()
 
+	def link_annotation(self, annotation):
+		"""Links an existing annotation to the object
+
+		Args:
+			annotation (omero.model.AnnotationI): Annotation to link to the object
+		"""
+		self.core.linkAnnotation(annotation)
+		# Updates the annotations of the object to include the new annotation
+		self.update_annotations()
+
 	def add_key_values(self, conn, key_values, namespace=None):
 		"""Adds key value pair to the omero object
 
@@ -190,6 +210,8 @@ class OmeroObject:
 				self.key_value_pairs[k] = True
 			elif v == "False":
 				self.key_value_pairs[k] = False
+			elif v == "None":
+				self.key_value_pairs[k] = None
 	
 	def reload(self, connection):
 		"""Used to reload the object in case of connection loss
@@ -245,8 +267,8 @@ class ImageObject(OmeroObject):
 	:ivar channels: Channel metadata wrappers as :class:`ChannelObject` items.
 	:ivar shape: Current loaded image shape tuple.
 	:ivar rois: Associated ROIs as :class:`RoiObject` items.
-	:ivar image_data: Loaded image data (xarray DataArray) or ``None``.
-	:ivar image_plus: Cached ImageJ ``ImagePlus`` object or ``None``.
+	:ivar image_data: Image data (xarray DataArray). Downloaded from OMERO on first access if not already loaded.
+	:ivar image_plus: ImageJ ``ImagePlus`` object. Generated on first access if not already generated.
 	"""
 	def __init__(self, image, load_data=False, parent=None, reload=False):
 		"""Initialises the ImageObject. Will populate with metadata and, if enabled, load the image into memory
@@ -274,6 +296,10 @@ class ImageObject(OmeroObject):
 		# Dimension order is always TCZYX for the image data loaded by this module
 		self.dim_order = "TCZYX"
 		self.acquisition_date = image.getAcquisitionDate()
+		if self.acquisition_date is None:
+			date_string = re.search(r'\d{4}-\d{2}-\d{2}', self.name)
+			if date_string: 
+				self.acquisition_date = datetime.strptime(date_string.group(), '%Y-%m-%d')
 		# Used to get objective information for metroloJ
 		try:
 			self.objective = image.getObjectiveSettings()
@@ -281,14 +307,19 @@ class ImageObject(OmeroObject):
 			self.refractive_index = self.objective.getRefractiveIndex()
 			self.NA = self.objective.getObjective().getLensNA()
 		except Exception as e:
+			errors = traceback.format_exc()
 			self.objective = None
-			self.refractive_index = None
-			self.NA = None
-			logger.warning(f"Objective information not available for image {self.name} (ID: {self.id})")
-			logger.debug(traceback.format_exc())
+			try:
+				self.NA = float(self.key_value_pairs["NA"])
+				self.refractive_index = float(self.key_value_pairs["refractiveIndex"])
+			except KeyError:
+				self.refractive_index = None
+				self.NA = None
+				logger.warning(f"Objective information not available for image {self.name} (ID: {self.id})")
+				logger.debug(errors)
 		try:
 			# Channel information is stored as their own OmeroObjects
-			self.channels = [ChannelObject(ch) for ch in image.getChannels()]
+			self.channels = [ChannelObject(ch, i, parent=self) for i, ch in enumerate(image.getChannels())]
 		except Exception as e:
 			self.channels = None
 			logger.warning(f"Channel information not available for image {self.name} (ID: {self.id})")
@@ -298,11 +329,33 @@ class ImageObject(OmeroObject):
 		self.rois = [RoiObject(roi, parent=self) for roi in image.getROIs()]
 		# If reload is enabled, then the image data will not be set to None so it would not require redownloading
 		if not reload:
-			self.image_data = None
-			self.image_plus = None
+			self._image_data = None
+			self._image_plus = None
 		# Image data is not downloaded by default as this can be slow and memory intensive, but can be enabled by setting load_data to True.
 		if load_data:
 			self.load_image_data()
+
+	@property
+	def image_data(self):
+		"Image data as an xarray. If not already loaded, the full image is downloaded from OMERO on first access."
+		if self._image_data is None:
+			self.load_image_data()
+		return self._image_data
+
+	@image_data.setter
+	def image_data(self, value):
+		self._image_data = value
+
+	@property
+	def image_plus(self):
+		"ImageJ ImagePlus of the image data. If not already generated, it is generated on first access. Requires initialised ImageJ."
+		if self._image_plus is None:
+			self.generate_ImagePlus()
+		return self._image_plus
+
+	@image_plus.setter
+	def image_plus(self, value):
+		self._image_plus = value
 
 	def reload(self, connection):
 		"Need own implementation of reload so reload param can be passed to __init__ to avoid having to redownload image data"
@@ -353,9 +406,6 @@ class ImageObject(OmeroObject):
 		# Requires ImageJ to be initialised to work
 		if omero_microscope_qc._ij is None:
 			raise RuntimeError("ImageJ has not been initialised. Please call omero_microscope_qc.initialise() before use.")
-		# If the image data has not been loaded, it will be loaded now.
-		if self.image_data is None:
-			self.load_image_data()
 		# Converts the image to an ImagePlus. This is just a wrapper so does not involve data duplication in memory
 		image_plus = omero_microscope_qc._ij.py.to_imageplus(self.image_data)
 		# Sets the calibration from stored OMERO metadata
@@ -407,9 +457,6 @@ class ImageObject(OmeroObject):
 			scaled_height (float): Height of each bead ROI in scaled units
 			conn (gateway.BlitzGateway): Connected BlitzGateway to use for uploading the ROIs
 		"""
-		# ImagePlus is required for generating the rois
-		if self.image_plus is None:
-			self.generate_ImagePlus()
 		# Calls the function from imagej_utils
 		rois = omero_microscope_qc.imagej_utils.get_crop_roi_params(self.image_plus, scaled_width, scaled_height)
 		for roi in rois:
@@ -417,8 +464,9 @@ class ImageObject(OmeroObject):
 		
 	def close(self):
 		"Closes the image data and ImagePlus to free up memory."
-		if self.image_plus is not None:
-			self.image_plus.close()
+		# Uses the private attribute so that checking does not trigger generation of the ImagePlus
+		if self._image_plus is not None:
+			self._image_plus.close()
 		self.image_data = None
 		self.image_plus = None
 	
@@ -428,16 +476,33 @@ class ChannelObject(OmeroObject):
 	:ivar emission_wave: Emission wavelength metadata from OMERO.
 	:ivar excitation_wave: Excitation wavelength metadata from OMERO.
 	:ivar mode: Channel mode string, or ``None`` if unavailable in metadata.
+	:ivar channel_number: The number of the channel in the image.
 	"""
-	def __init__(self, channel):
-		super().__init__(channel)
+	def __init__(self, channel, channel_number, parent=None):
+		super().__init__(channel, parent=parent)
+		self.channel_number = channel_number
 		self.emission_wave = channel.getEmissionWave()
+		if self.emission_wave is None:
+			self.emission_wave = self.parse_wavelengths(channel_number, "em_wavelengths")
 		self.excitation_wave = channel.getExcitationWave()
+		if self.excitation_wave is None:
+			self.excitation_wave = self.parse_wavelengths(channel_number, "ex_wavelengths")
+
 		# Mode is not really used as metadata parsing by OMERO often misses it
 		try:
 			self.mode = channel.getLogicalChannel().getMode().value
 		except AttributeError:
 			self.mode = None
+
+	def parse_wavelengths(self, index, key):
+		"Parses the wavelength information from the key value pairs if it is not available in the channel metadata"
+		try:
+			wave_string = self.parent.key_value_pairs[key]
+			wave_list = wave_string.split(",")
+			return float(wave_list[index])
+		except:
+			return None
+	
 	def attach_annotation(self, *args, **kwargs):
 		raise NotImplementedError("Attaching annotations to channels is not supported")
 
@@ -483,7 +548,7 @@ class RoiObject(OmeroObject):
 		if self.parent is None:
 			raise RuntimeError("Roi does not have a parent image to load data from")
 		self.parent.load_image_data(c=c, t=t, z=z, tile=self.Tile)
-		# Need to regenerate the ImagePlus to reflect the loaded tile data
-		if self.parent.image_plus is not None:
-			self.parent.image_plus.close()
-			self.parent.generate_ImagePlus()
+		# Clears any existing ImagePlus so it is regenerated from the tile data on next access
+		if self.parent._image_plus is not None:
+			self.parent._image_plus.close()
+			self.parent.image_plus = None

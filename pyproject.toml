@@ -29,6 +29,13 @@ dependencies = [
 imagej = [
   "pyimagej"
 ]
+nanoimagingpack = [
+  "NanoImagingPack>=2.1.5"
+]
+all = [
+  "pyimagej",
+  "NanoImagingPack>=2.1.5"
+]
 [tool.setuptools]
 packages = ["omero_microscope_qc"]
 [tool.setuptools_scm]
