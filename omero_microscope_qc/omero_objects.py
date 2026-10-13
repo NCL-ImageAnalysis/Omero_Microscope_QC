@@ -1,9 +1,11 @@
 import os
+import re
 import numpy as np
 import xarray
 import itertools
 import logging
 import traceback
+from datetime import datetime
 import omero_microscope_qc
 
 import omero
@@ -294,6 +296,10 @@ class ImageObject(OmeroObject):
 		# Dimension order is always TCZYX for the image data loaded by this module
 		self.dim_order = "TCZYX"
 		self.acquisition_date = image.getAcquisitionDate()
+		if self.acquisition_date is None:
+			date_string = re.search(r'\d{4}-\d{2}-\d{2}', self.name)
+			if date_string: 
+				self.acquisition_date = datetime.strptime(date_string.group(), '%Y-%m-%d')
 		# Used to get objective information for metroloJ
 		try:
 			self.objective = image.getObjectiveSettings()
