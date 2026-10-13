@@ -106,7 +106,7 @@ def initialize_MetroloJDialog(method,
 	Dialog.beadDetectionThreshold = thresholding_method
 	Dialog.centerDetectionMethodIndex = center_integer
 
-	if Dialog.NA == None or Dialog.refractiveIndex == None:
+	if image.NA == None or image.refractiveIndex == None:
 		raise ValueError(f"Objective information not found for image {image.name} (ID: {image.id}). Please ensure that the image has key value pairs for 'NA' and 'refractiveIndex'.")
 
 	# Adding metadata from Omero
