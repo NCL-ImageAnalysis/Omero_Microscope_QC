@@ -104,7 +104,7 @@ def run_detector(conn, image, image_output_directory_str, save_images=True):
 	if omero_objects.Bool_or_Missing(partner_image.key_value_pairs, "QC_Processed"):
 		for ann in partner_image.file_annotations:
 			image.link_annotation(ann)
-		image.add_key_values(conn, {"QC_Processed": True}, namespace="qc.status")
+		image.add_key_values(conn, {"QC_Processed": "True"}, namespace="qc.status")
 		return None
 
 	bright_dark_images = {}
