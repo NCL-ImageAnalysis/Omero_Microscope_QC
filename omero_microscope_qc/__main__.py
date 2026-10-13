@@ -138,7 +138,7 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 		except Exception as e:
 			if roi is not None:
 				print_and_log(f"Failed to process ROI {roi.id} for image {image.name} (ID: {image.id}) from microscope {project_name}. Error: {str(e)}", log_level=logging.ERROR)
-				print_and_log(traceback.format_exc(), log_level=logging.ERROR)
+				logging.error(traceback.format_exc())
 				# Kept so it can be re-raised if no ROI succeeds (e is cleared after the except block)
 				last_error = e
 			else:
