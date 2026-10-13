@@ -301,11 +301,16 @@ class ImageObject(OmeroObject):
 			self.refractive_index = self.objective.getRefractiveIndex()
 			self.NA = self.objective.getObjective().getLensNA()
 		except Exception as e:
+			errors = traceback.format_exc()
 			self.objective = None
-			self.refractive_index = None
-			self.NA = None
-			logger.warning(f"Objective information not available for image {self.name} (ID: {self.id})")
-			logger.debug(traceback.format_exc())
+			try:
+				self.NA = image.key_value_pairs["NA"]
+				self.refractive_index = image.key_value_pairs["refractiveIndex"]
+			except KeyError:
+				self.refractive_index = None
+				self.NA = None
+				logger.warning(f"Objective information not available for image {self.name} (ID: {self.id})")
+				logger.debug(errors)
 		try:
 			# Channel information is stored as their own OmeroObjects
 			self.channels = [ChannelObject(ch) for ch in image.getChannels()]
