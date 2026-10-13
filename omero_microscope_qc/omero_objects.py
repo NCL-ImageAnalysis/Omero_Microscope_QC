@@ -482,8 +482,8 @@ class ChannelObject(OmeroObject):
 		super().__init__(channel, parent=parent)
 		self.channel_number = channel_number
 		self.emission_wave = channel.getEmissionWave()
-		if self.emmision_wave is None:
-			self.emmision_wave = self.parse_wavelengths(channel_number, "em_wavelengths")
+		if self.emission_wave is None:
+			self.emission_wave = self.parse_wavelengths(channel_number, "em_wavelengths")
 		self.excitation_wave = channel.getExcitationWave()
 		if self.excitation_wave is None:
 			self.excitation_wave = self.parse_wavelengths(channel_number, "ex_wavelengths")
