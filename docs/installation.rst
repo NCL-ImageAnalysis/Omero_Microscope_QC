@@ -17,6 +17,7 @@ Dependencies
 * `networkx <https://pypi.org/project/networkx/>`_
 * `pandas <https://pypi.org/project/pandas/>`_
 * `click <https://pypi.org/project/click/>`_
+* `NanoImagingPack <https://pypi.org/project/NanoImagingPack/>`_ (optional, only required for the detector analysis module)
 
 Installation with conda/mamba
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,10 +55,12 @@ You can download Fiji from: https://fiji.sc/ and the MetroloJ_QC jar file from i
 
 After Fiji has been unzipped from its archive download the MetroloJ_QC jar file to its plugin folder. Currently this has been tested on MetroloJ_QC v1.3.1.2
 
-Installation without pyImageJ/MetroloJ
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-It is possible to install without pyImageJ in order to just use the omero helper functions. pyimagej is only a requirement if you add ``.[imagej]`` to your pip install command, e.g.
+Installation without pyImageJ/MetroloJ/NanoImagingPack
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+It is possible to install without pyImageJ or NanoImagingPack in order to just use the omero helper functions. pyimagej is only a requirement if you add ``.[imagej]`` to your pip install command, e.g.
 
 ::
 
     pip install .[imagej]
+
+The same is true for NanoImagingPack, which is only required if you add ``.[nanoimagingpack]`` to your pip install command, and you can use ``.[all]`` to install all optional dependencies.
