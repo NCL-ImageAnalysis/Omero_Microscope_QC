@@ -257,14 +257,14 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 		conn.close()
 		return
 	
-	logging.info("Initialising Fiji...")
+	print_and_log("Initialising Fiji...", log_level=logging.INFO)
 	try:
 		omero_microscope_qc.initialise(fiji_path, mode="interactive", memory=memory)
 	except RuntimeError as e:
-		logging.error(f"Failed to initialise Fiji. Please check the Fiji path and ensure it is correct.")
+		print_and_log(f"Failed to initialise Fiji. Please check the Fiji path and ensure it is correct.", log_level=logging.ERROR)
 		conn.close()
 		return
-	logging.info("Fiji initialised successfully.")
+	print_and_log("Fiji initialised successfully.", log_level=logging.INFO)
 	
 	# Dictionary to map dataset names to method names for processing
 	to_method_name = {coreg_name: "registration", psf_name: "psf", drift_name: "drift", z_accuracy_name: "z_accuracy", detector_metrics_name: "detector"}
@@ -310,7 +310,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 										  save_csv=save_csv, 
 										  save_images=save_images)
 			except (ConnectionError, Ice.ConnectionLostException):
-				logging.error("Connection to OMERO server lost. Attempting to reconnect and retry...")
+				print_and_log("Connection to OMERO server lost. Attempting to reconnect and retry...", log_level=logging.ERROR)
 				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
 				image_output_directory = run_analysis(image, 
 										  output_directory, 
@@ -339,7 +339,8 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 		# If any error occurs during processing or attaching results for an image, it will be caught here and printed out, 
 		# but the script will continue to the next image rather than stopping completely. 
 		except Exception as e:
-			logging.error(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}", exc_info=debug)
+			print_and_log(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}", log_level=logging.ERROR)
+			logging.error(traceback.format_exc())
 			# Searchable key value pair to find errors
 			image.add_key_values(conn, {"QC_Error": "True"}, namespace="qc.status")
 			# Writes the error message and traceback to a log file in the output directory, attaches it to the image, and then removes the log file from the local system.
