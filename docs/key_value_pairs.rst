@@ -59,6 +59,14 @@ correspond to most settings available in the GUI version of the plugin.
      - Value Type
      - Accepted Values
      - Description
+   * - ``ex_wavelengths``
+     - List of Numbers
+     - Any
+     - Excitation wavelengths for each channel. Put as a comma separated list of numbers (for example 405,488,561,640).
+   * - ``em_wavelengths``
+     - List of Numbers
+     - Any
+     - Emission wavelengths for each channel. Put as a comma separated list of numbers (for example 405,488,561,640).
    * - ``operator``
      - Text
      - Any
