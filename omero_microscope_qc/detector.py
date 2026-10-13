@@ -90,9 +90,12 @@ def run_detector(conn, image, image_output_directory_str, save_images=True):
 	# If no test_identifier is set, uses acquisition date to find the partner image
 	except KeyError:
 		for partner in dataset.children:
-			if partner.acquisition_date.strftime("%Y-%m-%d") == image.acquisition_date.strftime("%Y-%m-%d") and partner.id != image.id:
-				partner_image = partner
-				n_partners += 1
+			try:
+				if partner.acquisition_date.strftime("%Y-%m-%d") == image.acquisition_date.strftime("%Y-%m-%d") and partner.id != image.id:
+					partner_image = partner
+					n_partners += 1
+			except AttributeError:
+				raise ValueError(f'Image {image.id} or partner image {partner.id} does not have an acquisition date set. Either include date in filename or add matching "test_identifier" to key value pairs.')
 	if n_partners == 0:
 		raise ValueError(f"No partner image found for image {image.id} in dataset {dataset.id} during detector QC.")
 	if n_partners > 1:
