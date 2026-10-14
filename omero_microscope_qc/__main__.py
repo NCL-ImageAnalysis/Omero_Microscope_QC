@@ -214,7 +214,6 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 @click.option("--save_images/--no_save_images", default=True, help="Whether to save the MetroloJ output images and attach to OMERO. Default is save_images.")
 @click.option("--clear_local_output", default=False, is_flag=True, help="Whether to clear the local output directory after processing each image. Default is False.")
 @click.option("--memory", default="6g", type=str, help="Amount of memory to allocate to Fiji (e.g. '6g' for 6 gigabytes). Default is '6g'.")
-@click.option("--debug", default=False, is_flag=True, help="Whether to run in debug mode, which will print full tracebacks. Default is False.")
 @click.option("--log_level", default="INFO", type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]), help="Set the logging level for the script. Default is 'INFO'.")
 @click.option("--log_files", default=None, type=click.Path(dir_okay=True, file_okay=True, writable=True, resolve_path=True), help="Path to a log file to write logs to. If a directory is provided, a new log file will be created in that directory with a timestamp. If not provided, logs will be printed to the console. Default is None.")
 @click.option("--verbose", is_flag=True, help="Print output messages to the console. Default is False.")
@@ -222,7 +221,7 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 def main(output_directory, config_path, coreg_name, psf_name, drift_name, 
 		 z_accuracy_name, detector_metrics_name, thresholding_method, 
 		 center_dectection_method, save_pdf, save_csv, save_images, 
-		 clear_local_output, memory, debug, log_level, log_files, verbose):
+		 clear_local_output, memory, log_level, log_files, verbose):
 	
 	handlers = []
 	if verbose:
