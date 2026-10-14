@@ -14,7 +14,7 @@ from omero.rtypes import rdouble
 
 logger = logging.getLogger(__name__)
 
-def connect(hostname, username, password, *, keep_alive=None, secure=None, port=None):
+def connect(hostname, username, password, *, keep_alive=None, secure=None, port=None, group=None):
 	"""
 	Connect to an OMERO server
 	:param hostname: Host name
@@ -23,6 +23,7 @@ def connect(hostname, username, password, *, keep_alive=None, secure=None, port=
 	:param keep_alive: Keep-alive interval in seconds (None/0 disables)
 	:param secure: Whether to use secure connection; None uses BlitzGateway default
 	:param port: OMERO server port; None uses BlitzGateway default
+	:param group: OMERO group to join; None uses the default group
 	:return: Connected BlitzGateway
 	"""
 	gateway_kwargs = {"host": hostname}
@@ -41,6 +42,11 @@ def connect(hostname, username, password, *, keep_alive=None, secure=None, port=
 	except omero.ClientError:
 		conn.close()
 		raise ConnectionError("Failed to connect to OMERO server. Please check your credentials and connection details.")
+	if group:
+		group_set = conn.setGroupForSession(int(group))
+		if group_set == False:
+			conn.close()
+			raise ConnectionError(f"Failed to set group {group} for session. Please check your group ID.")
 	logger.info(f"Connected to OMERO server at {hostname} as user {username}")
 	return conn
 

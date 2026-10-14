@@ -177,7 +177,7 @@ def attach_results(image, output_directory, connection, method, clear_local_outp
 		shutil.rmtree(output_directory)
 	print_and_log(f"Finished processing image {image.name} (ID: {image.id}).")
 
-def reconnect_and_reload(image_list, connection_parameters, current_connection=None):
+def reconnect_and_reload(image_list, connection_parameters, current_connection=None, group=None):
 	"""Attempts to reconnect to the OMERO server and reloads the given list of images. Should be used in the case of a lost connection to the OMERO server, which can happen if processing takes a long time."
 
 	Args:
@@ -193,7 +193,7 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 			current_connection.close()
 		except Exception:
 			pass
-	conn = omero_objects.connect(*connection_parameters)
+	conn = omero_objects.connect(*connection_parameters, group=group)
 	for image in image_list:
 		logging.debug(f"Reloading image {image.name} (ID: {image.id}) after reconnecting to OMERO server.")
 		image.reload(conn)
@@ -241,13 +241,14 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 	omero_username = config["username"]
 	omero_password = config["password"]
 	fiji_path = config["fiji_path"]
+	omero_group = config.get("group", None)
 	conn_params = (omero_hostname, omero_username, omero_password)
 
 	# Connects to the OMERO server
 	try:
-		conn = omero_objects.connect(*conn_params)
-	except ConnectionError:
-		logging.error("Failed to connect to OMERO server. Please check your credentials and connection details.")
+		conn = omero_objects.connect(*conn_params, group=omero_group)
+	except ConnectionError as e:
+		logging.error(f"Error: {e}")
 		return
 	
 	# Checks that the Fiji path is a valid directory before attempting to initialise Fiji
@@ -310,7 +311,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 										  save_images=save_images)
 			except (ConnectionError, Ice.ConnectionLostException):
 				print_and_log("Connection to OMERO server lost. Attempting to reconnect and retry...", log_level=logging.ERROR)
-				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
+				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn, group=omero_group)
 				image_output_directory = run_analysis(image, 
 										  output_directory, 
 										  method, 
@@ -331,7 +332,7 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 				image.add_key_values(conn, {"QC_Processed": "True"}, namespace="qc.status")
 			except (ConnectionError, Ice.ConnectionLostException):
 				print_and_log("Connection to OMERO server lost while attaching results. Attempting to reconnect and retry...", log_level=logging.ERROR)
-				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn)
+				conn = reconnect_and_reload(to_process[index:], conn_params, current_connection=conn, group=omero_group)
 				attach_results(image, image_output_directory, conn, method, clear_local_output=clear_local_output)
 				# Marks the image as being successfully processed
 				image.add_key_values(conn, {"QC_Processed": "True"}, namespace="qc.status")
