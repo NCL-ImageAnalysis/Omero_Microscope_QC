@@ -57,14 +57,15 @@ def connect(hostname, username, password, *, keep_alive=None, secure=None, port=
 	logger.info(f"Connected to OMERO server at {hostname} as user {username}")
 	return conn
 
-def download_annotation_file(annotation_file, output_directory):
+def download_annotation_file(annotation_file, output_directory, name_prefix=""):
 	"""Downloads annotation file from omero
 
 	Args:
 		annotation_file (omero.model.FileAnnotationI): File annotation to download
 		output_directory (str): Path to the directory where the annotation file should be downloaded
+		name_prefix (str): Prefix to add to the beginning of the annotation file name
 	"""
-	with open(os.path.join(output_directory, annotation_file.getFileName()), "wb") as f:
+	with open(os.path.join(output_directory, name_prefix + annotation_file.getFileName()), "wb") as f:
 		for chunk in annotation_file.getFileInChunks():
 			f.write(chunk)
 

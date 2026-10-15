@@ -56,7 +56,7 @@ def process_image(image, output_directory, id_mapping):
 	os.makedirs(output_dir, exist_ok=True)
 	
 	logging.info(f"Downloading file attachments for image {image.name} (ID: {image.id}) to {output_dir}")
-	success = download_file_attachments(image, output_dir)
+	success = download_file_attachments(image, output_dir, name_prefix=f"{image.name}_")
 	return success
 	
 
