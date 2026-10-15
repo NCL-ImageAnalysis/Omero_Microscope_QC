@@ -86,7 +86,7 @@ class OmeroObject:
 	:ivar key_value_pairs: Effective merged key-value map, including inherited values from parent objects.
 	"""
 	@classmethod
-	def from_omero_entity(cls, omero_entity, parent=None):
+	def from_omero_entity(cls, omero_entity, parent=None, matching_kv_pairs=None):
 		"""Factory method to create the appropriate OmeroObject subclass based on the OMERO entity provided
 
 		Args:
@@ -94,9 +94,9 @@ class OmeroObject:
 			parent (OmeroObject, optional): Parent of the object e.g. a dataset or project. Defaults to None.
 		"""
 		if omero_entity.OMERO_CLASS == "Image":
-			return ImageObject(omero_entity, parent=parent)
+			return ImageObject(omero_entity, parent=parent, matching_kv_pairs=matching_kv_pairs)
 		else:
-			return ParentObject(omero_entity, parent=parent)
+			return ParentObject(omero_entity, parent=parent, matching_kv_pairs=matching_kv_pairs)
 
 	def __init__(self, omero_entity, parent=None):
 		"""Initialises the OmeroObject with the given OMERO entity and parent object (if applicable).
@@ -218,6 +218,16 @@ class OmeroObject:
 				self.key_value_pairs[k] = False
 			elif v == "None":
 				self.key_value_pairs[k] = None
+
+	def check_matching_key_values(self, matching_kv_pairs):
+		for key, value in matching_kv_pairs.items():
+			if value == False:
+				if Bool_or_Missing(self.key_value_pairs, key):
+					return False
+			else:
+				if self.key_value_pairs.get(key) != value:
+					return False
+		return True
 	
 	def reload(self, connection):
 		"""Used to reload the object in case of connection loss
@@ -234,7 +244,7 @@ class ParentObject(OmeroObject):
 
 	:ivar children: Child objects wrapped as :class:`OmeroObject` subclasses.
 	"""
-	def __init__(self, omero_entity, parent=None):
+	def __init__(self, omero_entity, parent=None, matching_kv_pairs=None):
 		"""Initialises the ParentObject with the given OMERO entity and its own parent (if applicable).
 
 		Args:
@@ -245,10 +255,11 @@ class ParentObject(OmeroObject):
 		self.children = []
 		for child in omero_entity.listChildren():
 			try:
-				self.children.append(OmeroObject.from_omero_entity(child, parent=self))
+				self.children.append(OmeroObject.from_omero_entity(child, parent=self, matching_kv_pairs=matching_kv_pairs))
 			except Exception as e:
 				logger.error(f"Failed to load child: {child.getName()}. Error: {str(e)}")
 				logger.debug(traceback.format_exc())
+		self.children = [child for child in self.children if child is not None]
 		logging.debug(f"Loaded {len(self.children)} children for {self.omero_class} object with ID {self.id} and name '{self.name}'")
 
 class ImageObject(OmeroObject):
@@ -277,7 +288,7 @@ class ImageObject(OmeroObject):
 	:ivar image_data: Image data (xarray DataArray). Downloaded from OMERO on first access if not already loaded.
 	:ivar image_plus: ImageJ ``ImagePlus`` object. Generated on first access if not already generated.
 	"""
-	def __init__(self, image, load_data=False, parent=None, reload=False):
+	def __init__(self, image, load_data=False, parent=None, reload=False, matching_kv_pairs=None):
 		"""Initialises the ImageObject. Will populate with metadata and, if enabled, load the image into memory
 
 		Args:
@@ -287,6 +298,9 @@ class ImageObject(OmeroObject):
 			reload (bool, optional): Whether to reload the object in case of loss of connection. Defaults to False.
 		"""
 		super().__init__(image, parent=parent)
+		if matching_kv_pairs is not None and not self.check_matching_key_values(matching_kv_pairs):
+			self = None
+			return
 		self.children = None
 		# Gets axis sizes
 		self.size_x = image.getSizeX()
