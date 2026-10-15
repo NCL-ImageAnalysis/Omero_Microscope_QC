@@ -280,12 +280,16 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 	# This is based on whether they are in a dataset with an expected name and whether they have already been processed 
 	# (indicated by the presence of a key "QC_Processed" in the image key value pairs). 
 	# Compiles a list of images to be processed and prints out a summary of how many images were found for each method.
+	needed_kv_pairs = {"QC_Processed": False, 
+					"Skip_Analysis": False}
+
 	to_process = []
 	for microscope_project in conn.getObjects("Project"):
-		project = omero_objects.OmeroObject.from_omero_entity(microscope_project)
+		project = omero_objects.OmeroObject.from_omero_entity(microscope_project, matching_kv_pairs=needed_kv_pairs)
 		for dataset in project.children:
 			if dataset.name in dataset_names:
-				to_process += [image for image in dataset.children if not omero_objects.Bool_or_Missing(image.key_value_pairs, "QC_Processed") and not omero_objects.Bool_or_Missing(image.key_value_pairs, "Skip_Analysis")]
+				to_process += [image for image in dataset.children]
+
 	print_and_log(f"Found {len(to_process)} images to process.")
 	print_and_log(f"Coregistration: {len([image for image in to_process if image.parent.name == coreg_name])}")
 	print_and_log(f"PSF: {len([image for image in to_process if image.parent.name == psf_name])}")
