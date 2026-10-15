@@ -94,9 +94,10 @@ def main(output_directory, config_path, log_level, log_files):
 	needed_kv_pairs = {"QC_Processed": True, 
 	                   "Feets_Imported": False,
 					   "microscope_id": omero_objects.EXISTS}
+	
 	to_process = []
 	for microscope_project in conn.getObjects("Project"):
-		project = OmeroObject.from_omero_entity(microscope_project, matching_kv_pairs={"microscope_id": True})
+		project = OmeroObject.from_omero_entity(microscope_project, matching_kv_pairs=needed_kv_pairs)
 		for dataset in project.children:
 			for image in dataset.children:
 				image.folder = get_folder_from_namespace(image)
