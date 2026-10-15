@@ -103,7 +103,6 @@ def run_z_accuracy(input_image,
 
 	# Gets the needed paths and filenames for input and output
 	FileName = input_image.name
-	FileNameNoExtension = ".".join(FileName.split(".")[:-1])
 	OutputPath = output_directory
 
 	Calibration = image_plus.getCalibration()
@@ -182,10 +181,10 @@ def run_z_accuracy(input_image,
 	results["AxialDiff"] = results["AxialDiff"].abs()
 	results.at[0, "AxialDiff"] = 0
 	# Saves the results table
-	results.to_csv(os.path.join(OutputPath, f"{FileNameNoExtension}{save_suffix}_XZ.csv"), index=False)
+	results.to_csv(os.path.join(OutputPath, f"{save_suffix}_XZ_results.csv"), index=False)
 
 	# Resets the contrast for easier viewing
 	SlicedImp.resetDisplayRange()
 	# Saves the XZ image and closes to save memory
-	omero_microscope_qc._java["FileSaver"](SlicedImp).saveAsTiff(os.path.join(OutputPath, f"{FileNameNoExtension}{save_suffix}_XZ.tif"))
+	omero_microscope_qc._java["FileSaver"](SlicedImp).saveAsTiff(os.path.join(OutputPath, f"{save_suffix}_XZ.tif"))
 	SlicedImp.close()
