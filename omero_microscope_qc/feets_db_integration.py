@@ -96,6 +96,8 @@ def main(output_directory, config_path, log_level, log_files):
 		logging.error(f"Error: {e}")
 		return
 
+	print(f"Connection timing: {time.time() - start_time:.2f} seconds")
+
 	needed_kv_pairs = {"QC_Processed": True, 
 	                   "Feets_Imported": False,
 					   "microscope_id": omero_objects.EXISTS}
@@ -108,6 +110,8 @@ def main(output_directory, config_path, log_level, log_files):
 				image.folder = get_folder_from_namespace(image)
 				if image.folder is not None:
 					to_process.append(image)
+
+	print(f"Image import timing: {time.time() - start_time:.2f} seconds")
 
 	logging.info(f"Found {len(to_process)} images to process.")
 
