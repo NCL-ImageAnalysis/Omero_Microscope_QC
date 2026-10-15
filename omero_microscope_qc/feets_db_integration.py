@@ -1,3 +1,6 @@
+import time
+
+start_time = time.time()
 import os
 import click
 from omero_microscope_qc import omero_objects
@@ -6,6 +9,8 @@ import json
 import logging
 import traceback
 from datetime import datetime
+
+print(f"Import time: {time.time() - start_time:.2f} seconds")
 
 _NS_TO_FOLDER = {
 	"qc.registration" : "Coregistration",
@@ -124,3 +129,5 @@ def main(output_directory, config_path, log_level, log_files):
 
 if __name__ == "__main__":
 	main()
+
+print(f"Script execution time: {time.time() - start_time:.2f} seconds")
