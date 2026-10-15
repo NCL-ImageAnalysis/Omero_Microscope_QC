@@ -14,6 +14,13 @@ from omero.rtypes import rdouble
 
 logger = logging.getLogger(__name__)
 
+class _Exists:
+    """Sentinel: key must be present (any value)."""
+    def __repr__(self):
+        return "EXISTS"
+
+EXISTS = _Exists()
+
 def connect(hostname, username, password, *, keep_alive=None, secure=None, port=None, group=None):
 	"""
 	Connect to an OMERO server
@@ -92,6 +99,7 @@ class OmeroObject:
 		Args:
 			omero_entity (omero.model.IObject): OMERO entity to create the object from
 			parent (OmeroObject, optional): Parent of the object e.g. a dataset or project. Defaults to None.
+			matching_kv_pairs (dict, optional): A dictionary of key-value pairs to match against any images' key-value pairs. If a key is present in this dictionary with the value EXISTS, the key must be present in the object's key-value pairs regardless of its value. If a key is present with a value of False, the key must be present in the object's key-value pairs and its value must be False.
 		"""
 		if omero_entity.OMERO_CLASS == "Image":
 			return ImageObject(omero_entity, parent=parent, matching_kv_pairs=matching_kv_pairs)
@@ -220,9 +228,13 @@ class OmeroObject:
 				self.key_value_pairs[k] = None
 
 	def check_matching_key_values(self, matching_kv_pairs):
+		"""Checks if the object has the specified key value pairs. Special sentinel value EXISTS can be used to check if a key is present regardless of its value. False will be returned if key value is set to either False or is not present"""
 		for key, value in matching_kv_pairs.items():
 			if value == False:
 				if Bool_or_Missing(self.key_value_pairs, key):
+					return False
+			elif value is EXISTS:
+				if key not in self.key_value_pairs:
 					return False
 			else:
 				if self.key_value_pairs.get(key) != value:
@@ -250,6 +262,7 @@ class ParentObject(OmeroObject):
 		Args:
 			omero_entity (omero.model.IObject): OMERO entity to create the object from
 			parent (OmeroObject, optional): Parent of the object e.g. a dataset or project. Defaults to None.
+			matching_kv_pairs (dict, optional): A dictionary of key-value pairs to match against any images' key-value pairs. If a key is present in this dictionary with the value EXISTS, the key must be present in the object's key-value pairs regardless of its value. If a key is present with a value of False, the key must be present in the object's key-value pairs and its value must be False.
 		"""
 		super().__init__(omero_entity, parent=parent)
 		self.children = []
@@ -296,6 +309,7 @@ class ImageObject(OmeroObject):
 			load_data (bool, optional): Whether to load the image data into memory. Defaults to False.
 			parent (OmeroObject, optional): Parent of the object. Defaults to None.
 			reload (bool, optional): Whether to reload the object in case of loss of connection. Defaults to False.
+			matching_kv_pairs (dict, optional): A dictionary of key-value pairs to match against the object's key-value pairs. If a key is present in this dictionary with the value EXISTS, the key must be present in the object's key-value pairs regardless of its value. If a key is present with a value of False, the key must be present in the object's key-value pairs and its value must be False.
 		"""
 		super().__init__(image, parent=parent)
 		if matching_kv_pairs is not None and not self.check_matching_key_values(matching_kv_pairs):
