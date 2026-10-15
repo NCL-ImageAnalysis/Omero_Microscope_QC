@@ -91,15 +91,16 @@ def main(output_directory, config_path, log_level, log_files):
 		logging.error(f"Error: {e}")
 		return
 
+	needed_kv_pairs = {"QC_Processed": True, 
+	                   "Feets_Imported": False,
+					   "microscope_id": omero_objects.EXISTS}
 	to_process = []
 	for microscope_project in conn.getObjects("Project"):
-		project = OmeroObject.from_omero_entity(microscope_project)
+		project = OmeroObject.from_omero_entity(microscope_project, matching_kv_pairs={"microscope_id": True})
 		for dataset in project.children:
 			for image in dataset.children:
 				image.folder = get_folder_from_namespace(image)
-				if (Bool_or_Missing(image.key_value_pairs, "QC_Processed") 
-				    and not Bool_or_Missing(image.key_value_pairs, "Feets_Imported")
-					and image.folder is not None):
+				if image.folder is not None:
 					to_process.append(image)
 
 	logging.info(f"Found {len(to_process)} images to process.")
