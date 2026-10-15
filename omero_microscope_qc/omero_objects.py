@@ -57,7 +57,7 @@ def download_annotation_file(annotation_file, output_directory):
 		annotation_file (omero.model.FileAnnotationI): File annotation to download
 		output_directory (str): Path to the directory where the annotation file should be downloaded
 	"""
-	with open(os.path.join(output_directory, annotation_file.getName()), "wb") as f:
+	with open(os.path.join(output_directory, annotation_file.getFileName()), "wb") as f:
 		for chunk in annotation_file.getFileInChunks():
 			f.write(chunk)
 
