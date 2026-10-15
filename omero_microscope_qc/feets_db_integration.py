@@ -1,4 +1,5 @@
 import os
+import re
 import click
 from omero_microscope_qc import omero_objects
 from omero_microscope_qc.omero_objects import OmeroObject, Bool_or_Missing
@@ -15,6 +16,8 @@ _NS_TO_FOLDER = {
 	"qc.detector" : "Detector"
 }
 
+_REGEX_OBJ = re.compile(r".*_results\.(csv|txt|xls)$")
+
 def get_folder_from_namespace(image):
 	unique_namespaces = set([attachment.getNs() for attachment in image.file_annotations if attachment.getNs() in _NS_TO_FOLDER])
 	if len(unique_namespaces) > 1:
@@ -27,9 +30,9 @@ def download_file_attachments(image, output_dir):
 	success = False
 	for attachment in image.file_annotations:
 		try:
-			if _NS_TO_FOLDER.get(attachment.getNs()) == image.folder:
-				omero_objects.download_annotation_file(attachment, output_dir)
-				logging.info(f"Downloaded file attachment {attachment.getFileName()} (ID: {attachment.getId()}) for image {image.name} (ID: {image.id})")
+			if _NS_TO_FOLDER.get(attachment.getNs()) == image.folder and _REGEX_OBJ.match(attachment.getFileName()):
+				omero_objects.download_annotation_file(attachment, output_dir, name_prefix=f"{image.name}_")
+				logging.info(f"Downloaded file attachment {image.name}_{attachment.getFileName()} (ID: {attachment.getId()}) for image {image.name} (ID: {image.id})")
 				success = True
 		except Exception as e:
 			logging.error(f"Failed to download file attachment {attachment.getFileName()} (ID: {attachment.getId()}) for image {image.name} (ID: {image.id}): {e}")
@@ -56,7 +59,7 @@ def process_image(image, output_directory, id_mapping):
 	os.makedirs(output_dir, exist_ok=True)
 	
 	logging.info(f"Downloading file attachments for image {image.name} (ID: {image.id}) to {output_dir}")
-	success = download_file_attachments(image, output_dir, name_prefix=f"{image.name}_")
+	success = download_file_attachments(image, output_dir)
 	return success
 	
 
