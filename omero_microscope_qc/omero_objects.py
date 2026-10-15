@@ -249,6 +249,7 @@ class ParentObject(OmeroObject):
 			except Exception as e:
 				logger.error(f"Failed to load child: {child.getName()}. Error: {str(e)}")
 				logger.debug(traceback.format_exc())
+		logging.debug(f"Loaded {len(self.children)} children for {self.omero_class} object with ID {self.id} and name '{self.name}'")
 
 class ImageObject(OmeroObject):
 	"""Class for OMERO image objects.
@@ -340,6 +341,7 @@ class ImageObject(OmeroObject):
 		# Image data is not downloaded by default as this can be slow and memory intensive, but can be enabled by setting load_data to True.
 		if load_data:
 			self.load_image_data()
+		logging.debug(f"Loaded Image object with ID {self.id} and name '{self.name}' with shape {self.shape}")
 
 	@property
 	def image_data(self):
