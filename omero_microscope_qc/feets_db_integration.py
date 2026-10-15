@@ -126,8 +126,7 @@ def main(output_directory, config_path, log_level, log_files):
 			logging.error(traceback.format_exc())
 	conn.close()
 	logging.info("OMERO connection closed.")
+	print(f"Script execution time: {time.time() - start_time:.2f} seconds")
 
 if __name__ == "__main__":
 	main()
-
-print(f"Script execution time: {time.time() - start_time:.2f} seconds")
