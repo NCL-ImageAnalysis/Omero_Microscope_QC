@@ -36,6 +36,9 @@ all = [
   "pyimagej",
   "NanoImagingPack>=2.1.5"
 ]
+[project.scripts]
+feets-db-integration = "omero_microscope_qc.feets_db_integration:main"
+
 [tool.setuptools]
 packages = ["omero_microscope_qc"]
 [tool.setuptools_scm]
