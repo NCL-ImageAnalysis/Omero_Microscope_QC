@@ -102,7 +102,8 @@ class OmeroObject:
 			matching_kv_pairs (dict, optional): A dictionary of key-value pairs to match against any images' key-value pairs. If a key is present in this dictionary with the value EXISTS, the key must be present in the object's key-value pairs regardless of its value. If a key is present with a value of False, the key must be present in the object's key-value pairs and its value must be False.
 		"""
 		if omero_entity.OMERO_CLASS == "Image":
-			return ImageObject(omero_entity, parent=parent, matching_kv_pairs=matching_kv_pairs)
+			image = ImageObject(omero_entity, parent=parent, matching_kv_pairs=matching_kv_pairs)
+			return image if image.matches_kv_pairs else None
 		else:
 			return ParentObject(omero_entity, parent=parent, matching_kv_pairs=matching_kv_pairs)
 
@@ -312,8 +313,8 @@ class ImageObject(OmeroObject):
 			matching_kv_pairs (dict, optional): A dictionary of key-value pairs to match against the object's key-value pairs. If a key is present in this dictionary with the value EXISTS, the key must be present in the object's key-value pairs regardless of its value. If a key is present with a value of False, the key must be present in the object's key-value pairs and its value must be False.
 		"""
 		super().__init__(image, parent=parent)
-		if matching_kv_pairs is not None and not self.check_matching_key_values(matching_kv_pairs):
-			self = None
+		self.matches_kv_pairs = matching_kv_pairs is None or self.check_matching_key_values(matching_kv_pairs)
+		if not self.matches_kv_pairs:
 			return
 		self.children = None
 		# Gets axis sizes
