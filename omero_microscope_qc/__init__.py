@@ -3,6 +3,7 @@ from . import omero_objects
 from . import z_accuracy
 from . import detector
 from . import imagej_utils
+from . import feets_db_integration
 
 try:
 	import imagej

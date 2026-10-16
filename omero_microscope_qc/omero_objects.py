@@ -14,6 +14,13 @@ from omero.rtypes import rdouble
 
 logger = logging.getLogger(__name__)
 
+class _Exists:
+    """Sentinel: key must be present (any value)."""
+    def __repr__(self):
+        return "EXISTS"
+
+EXISTS = _Exists()
+
 def connect(hostname, username, password, *, keep_alive=None, secure=None, port=None, group=None):
 	"""
 	Connect to an OMERO server
@@ -50,14 +57,15 @@ def connect(hostname, username, password, *, keep_alive=None, secure=None, port=
 	logger.info(f"Connected to OMERO server at {hostname} as user {username}")
 	return conn
 
-def download_annotation_file(annotation_file, output_directory):
+def download_annotation_file(annotation_file, output_directory, name_prefix=""):
 	"""Downloads annotation file from omero
 
 	Args:
 		annotation_file (omero.model.FileAnnotationI): File annotation to download
 		output_directory (str): Path to the directory where the annotation file should be downloaded
+		name_prefix (str): Prefix to add to the beginning of the annotation file name
 	"""
-	with open(os.path.join(output_directory, annotation_file.getFileName()), "wb") as f:
+	with open(os.path.join(output_directory, name_prefix + annotation_file.getFileName()), "wb") as f:
 		for chunk in annotation_file.getFileInChunks():
 			f.write(chunk)
 
@@ -86,17 +94,19 @@ class OmeroObject:
 	:ivar key_value_pairs: Effective merged key-value map, including inherited values from parent objects.
 	"""
 	@classmethod
-	def from_omero_entity(cls, omero_entity, parent=None):
+	def from_omero_entity(cls, omero_entity, parent=None, matching_kv_pairs=None):
 		"""Factory method to create the appropriate OmeroObject subclass based on the OMERO entity provided
 
 		Args:
 			omero_entity (omero.model.IObject): OMERO entity to create the object from
 			parent (OmeroObject, optional): Parent of the object e.g. a dataset or project. Defaults to None.
+			matching_kv_pairs (dict, optional): A dictionary of key-value pairs to match against any images' key-value pairs. If a key is present in this dictionary with the value EXISTS, the key must be present in the object's key-value pairs regardless of its value. If a key is present with a value of False, the key must be present in the object's key-value pairs and its value must be False.
 		"""
 		if omero_entity.OMERO_CLASS == "Image":
-			return ImageObject(omero_entity, parent=parent)
+			image = ImageObject(omero_entity, parent=parent, matching_kv_pairs=matching_kv_pairs)
+			return image if image.matches_kv_pairs else None
 		else:
-			return ParentObject(omero_entity, parent=parent)
+			return ParentObject(omero_entity, parent=parent, matching_kv_pairs=matching_kv_pairs)
 
 	def __init__(self, omero_entity, parent=None):
 		"""Initialises the OmeroObject with the given OMERO entity and parent object (if applicable).
@@ -218,6 +228,20 @@ class OmeroObject:
 				self.key_value_pairs[k] = False
 			elif v == "None":
 				self.key_value_pairs[k] = None
+
+	def check_matching_key_values(self, matching_kv_pairs):
+		"""Checks if the object has the specified key value pairs. Special sentinel value EXISTS can be used to check if a key is present regardless of its value. False will be returned if key value is set to either False or is not present"""
+		for key, value in matching_kv_pairs.items():
+			if value == False:
+				if Bool_or_Missing(self.key_value_pairs, key):
+					return False
+			elif value is EXISTS:
+				if key not in self.key_value_pairs:
+					return False
+			else:
+				if self.key_value_pairs.get(key) != value:
+					return False
+		return True
 	
 	def reload(self, connection):
 		"""Used to reload the object in case of connection loss
@@ -234,21 +258,24 @@ class ParentObject(OmeroObject):
 
 	:ivar children: Child objects wrapped as :class:`OmeroObject` subclasses.
 	"""
-	def __init__(self, omero_entity, parent=None):
+	def __init__(self, omero_entity, parent=None, matching_kv_pairs=None):
 		"""Initialises the ParentObject with the given OMERO entity and its own parent (if applicable).
 
 		Args:
 			omero_entity (omero.model.IObject): OMERO entity to create the object from
 			parent (OmeroObject, optional): Parent of the object e.g. a dataset or project. Defaults to None.
+			matching_kv_pairs (dict, optional): A dictionary of key-value pairs to match against any images' key-value pairs. If a key is present in this dictionary with the value EXISTS, the key must be present in the object's key-value pairs regardless of its value. If a key is present with a value of False, the key must be present in the object's key-value pairs and its value must be False.
 		"""
 		super().__init__(omero_entity, parent=parent)
 		self.children = []
 		for child in omero_entity.listChildren():
 			try:
-				self.children.append(OmeroObject.from_omero_entity(child, parent=self))
+				self.children.append(OmeroObject.from_omero_entity(child, parent=self, matching_kv_pairs=matching_kv_pairs))
 			except Exception as e:
 				logger.error(f"Failed to load child: {child.getName()}. Error: {str(e)}")
 				logger.debug(traceback.format_exc())
+		self.children = [child for child in self.children if child is not None]
+		logging.debug(f"Loaded {len(self.children)} children for {self.omero_class} object with ID {self.id} and name '{self.name}'")
 
 class ImageObject(OmeroObject):
 	"""Class for OMERO image objects.
@@ -276,7 +303,7 @@ class ImageObject(OmeroObject):
 	:ivar image_data: Image data (xarray DataArray). Downloaded from OMERO on first access if not already loaded.
 	:ivar image_plus: ImageJ ``ImagePlus`` object. Generated on first access if not already generated.
 	"""
-	def __init__(self, image, load_data=False, parent=None, reload=False):
+	def __init__(self, image, load_data=False, parent=None, reload=False, matching_kv_pairs=None):
 		"""Initialises the ImageObject. Will populate with metadata and, if enabled, load the image into memory
 
 		Args:
@@ -284,8 +311,12 @@ class ImageObject(OmeroObject):
 			load_data (bool, optional): Whether to load the image data into memory. Defaults to False.
 			parent (OmeroObject, optional): Parent of the object. Defaults to None.
 			reload (bool, optional): Whether to reload the object in case of loss of connection. Defaults to False.
+			matching_kv_pairs (dict, optional): A dictionary of key-value pairs to match against the object's key-value pairs. If a key is present in this dictionary with the value EXISTS, the key must be present in the object's key-value pairs regardless of its value. If a key is present with a value of False, the key must be present in the object's key-value pairs and its value must be False.
 		"""
 		super().__init__(image, parent=parent)
+		self.matches_kv_pairs = matching_kv_pairs is None or self.check_matching_key_values(matching_kv_pairs)
+		if not self.matches_kv_pairs:
+			return
 		self.children = None
 		# Gets axis sizes
 		self.size_x = image.getSizeX()
@@ -340,6 +371,7 @@ class ImageObject(OmeroObject):
 		# Image data is not downloaded by default as this can be slow and memory intensive, but can be enabled by setting load_data to True.
 		if load_data:
 			self.load_image_data()
+		logging.debug(f"Loaded Image object with ID {self.id} and name '{self.name}' with shape {self.shape}")
 
 	@property
 	def image_data(self):
