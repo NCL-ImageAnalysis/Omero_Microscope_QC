@@ -44,6 +44,10 @@ These values have specific uses by the ``omero_microscope_qc`` module.
      - Number
      - Any number
      - Size of the crop used by ``generate_rois`` in scaled units.
+   * - ``Skip_Analysis``
+     - Boolean
+     - True, False
+     - Whether to skip analysis of this dataset/image. Useful for excluding images that are not suitable for analysis.
 
 MetroloJ_QC Values
 ------------------
