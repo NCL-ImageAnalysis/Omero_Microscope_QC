@@ -136,6 +136,22 @@ def getRoiMeasurements(SampleRoi, Image, Measurement_Options):
 	Image.resetRoi()
 	return OutputDict
 
+def brightestSlice(Image):
+	maxintensity = 0
+	highslice = None
+	for ImageSlice in range(1, Image.getStackSize()+1):
+		Image.setSlice(ImageSlice)
+		tempmax = Image.getStatistics().max
+		if tempmax > maxintensity:
+			maxintensity = tempmax
+			highslice = ImageSlice
+	return highslice
+
+def getBrightestChannel(Image):
+	brightest_index = brightestSlice(Image)
+	Image.setSlice(brightest_index)
+	return Image.crop()
+
 def getProjectedBeads(Imp, **kwargs):
 	"""Takes a bead image z-stack and returns the rois of beads from a max intensity projected image. 
 
@@ -146,7 +162,10 @@ def getProjectedBeads(Imp, **kwargs):
 	Returns:
 		[ij.gui.Roi]: List of ROIs corresponding to the beads in the projected image
 	"""
-	Projected = omero_microscope_qc._java["ZProjector"].run(Imp, "max")
+	Projected = getBrightestChannel(Imp)
+	# Included in case the image is multi-channel
+	if Projected.hasImageStack():
+		Projected = omero_microscope_qc._java["ZProjector"].run(Projected, "max")
 	# Gaussian blur image
 	omero_microscope_qc._java["IJ"].run(Projected, "Gaussian Blur...", "sigma=2")
 	# Thresholds the image to get the ladder
