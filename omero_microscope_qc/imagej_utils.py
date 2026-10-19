@@ -162,7 +162,9 @@ def getProjectedBeads(Imp, **kwargs):
 	Returns:
 		[ij.gui.Roi]: List of ROIs corresponding to the beads in the projected image
 	"""
+	print(f"Image dimensions: {Imp.getDimensions()}")
 	Projected = omero_microscope_qc._java["ZProjector"].run(Imp, "max")
+	print(f"Projected dimensions: {Projected.getDimensions()}")
 	# Included in case the image is multi-channel
 	if Projected.hasImageStack():
 		Projected_Slice = getBrightestChannel(Projected)
@@ -171,6 +173,8 @@ def getProjectedBeads(Imp, **kwargs):
 
 	if Projected.hasImageStack():
 		print("Still Stacked")
+
+	print(f"Double Projected dimensions: {Projected.getDimensions()}")
 		
 	# Gaussian blur image
 	omero_microscope_qc._java["IJ"].run(Projected, "Gaussian Blur...", "sigma=2")
