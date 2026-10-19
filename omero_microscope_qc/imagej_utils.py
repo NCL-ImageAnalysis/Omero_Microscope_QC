@@ -165,10 +165,13 @@ def getProjectedBeads(Imp, **kwargs):
 	Projected = omero_microscope_qc._java["ZProjector"].run(Imp, "max")
 	# Included in case the image is multi-channel
 	if Projected.hasImageStack():
-		print("Has stack")
-		Projected = getBrightestChannel(Projected)
-	else:
-		print("No stack")		
+		Projected_Slice = getBrightestChannel(Projected)
+		Projected.close()
+		Projected = Projected_Slice
+
+	if Projected.hasImageStack():
+		print("Still Stacked")
+		
 	# Gaussian blur image
 	omero_microscope_qc._java["IJ"].run(Projected, "Gaussian Blur...", "sigma=2")
 	# Thresholds the image to get the ladder
