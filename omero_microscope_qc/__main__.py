@@ -135,6 +135,7 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 			else:
 				raise ValueError(f"Unknown method '{method}'. Method must be one of 'registration', 'psf', 'drift' or 'z_accuracy'.")
 			success = True
+			omero_microscope_qc._java["WindowManager"].closeAllWindows()
 		except Exception as e:
 			if roi is not None:
 				print_and_log(f"Failed to process ROI {roi.id} for image {image.name} (ID: {image.id}) from microscope {project_name}. Error: {str(e)}", log_level=logging.ERROR)
