@@ -162,10 +162,10 @@ def getProjectedBeads(Imp, **kwargs):
 	Returns:
 		[ij.gui.Roi]: List of ROIs corresponding to the beads in the projected image
 	"""
-	Projected = getBrightestChannel(Imp)
+	Projected = omero_microscope_qc._java["ZProjector"].run(Imp, "max")
 	# Included in case the image is multi-channel
 	if Projected.hasImageStack():
-		Projected = omero_microscope_qc._java["ZProjector"].run(Projected, "max")
+		Projected = getBrightestChannel(Projected)		
 	# Gaussian blur image
 	omero_microscope_qc._java["IJ"].run(Projected, "Gaussian Blur...", "sigma=2")
 	# Thresholds the image to get the ladder
