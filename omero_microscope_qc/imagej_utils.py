@@ -162,8 +162,8 @@ def getProjectedBeads(Imp, **kwargs):
 	print(f"Projected dimensions: {Projected.getDimensions()}")
 	# Included in case the image is multi-channel
 	if Projected.hasImageStack():
-		brightest_index = brightestSlice(Imp)
-		Projected = omero_microscope_qc._java["Duplicator"]().run(Imp, brightest_index, brightest_index, 1, 1, 1, 1)
+		brightest_index = brightestSlice(Projected)
+		Projected = omero_microscope_qc._java["Duplicator"]().run(Projected, brightest_index, brightest_index, 1, 1, 1, 1)
 
 	if Projected.hasImageStack():
 		print("Still Stacked")
