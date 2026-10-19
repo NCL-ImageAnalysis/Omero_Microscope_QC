@@ -149,8 +149,9 @@ def brightestSlice(Image):
 
 def getBrightestChannel(Image):
 	brightest_index = brightestSlice(Image)
+	print (f"Brightest channel index: {brightest_index}")
 	Image.setSlice(brightest_index)
-	return Image.crop()
+	return omero_microscope_qc._java["Duplicator"].crop(Image)
 
 def getProjectedBeads(Imp, **kwargs):
 	"""Takes a bead image z-stack and returns the rois of beads from a max intensity projected image. 

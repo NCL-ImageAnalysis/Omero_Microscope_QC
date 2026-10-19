@@ -42,6 +42,7 @@ _JAVA_CLASSES = {
 	"Measurements": "ij.measure.Measurements",
 	"ResultsTable": "ij.measure.ResultsTable",
 	"ZProjector": "ij.plugin.ZProjector",
+	"Duplicator": "ij.plugin.Duplicator",
 	"Analyzer": "ij.plugin.filter.Analyzer",
 	"Slicer": "ij.plugin.Slicer",
 	"MaximumFinder": "ij.plugin.filter.MaximumFinder"
