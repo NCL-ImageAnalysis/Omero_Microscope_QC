@@ -157,9 +157,14 @@ def getProjectedBeads(Imp, **kwargs):
 	Returns:
 		[ij.gui.Roi]: List of ROIs corresponding to the beads in the projected image
 	"""
-	Projected = omero_microscope_qc._java["ZProjector"].run(Imp, "max")
+	if Imp.getDimensions()[4] > 1:
+		raise NotImplementedError("Timelapse images are not supported.")
+	if Imp.getDimensions()[3] > 1:
+		Projected = omero_microscope_qc._java["ZProjector"].run(Imp, "max")
+	else:
+		Projected = Imp.duplicate()
 	# Included in case the image is multi-channel
-	if Projected.hasImageStack():
+	if Projected.getDimensions()[2] > 1:
 		brightest_index = brightestSlice(Projected)
 		Projected = omero_microscope_qc._java["Duplicator"]().run(Projected, brightest_index, brightest_index, 1, 1, 1, 1)
 		
