@@ -99,6 +99,7 @@ This requires the hostname of the OMERO server you are connecting to along with 
 You also need to provide a path to the top level folder where your version of fiji with MetroloJ_QC is installed.
 If this is a windows path, you must use double slashes to avoid it being interpreted as an escape character.
 For example, a windows path of `C:\Program Files\Fiji.app` should be written as `C:\\Program Files\\Fiji.app`.
+You can also optionally provide the group ID. If this is not found then it will process your default group (group that opens automatically when you open omero web).
 
 The script can then be run with:
 

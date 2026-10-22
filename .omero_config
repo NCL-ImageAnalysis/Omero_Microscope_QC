@@ -2,5 +2,6 @@
 	"hostname": "Input Hostname of OMERO Server",
 	"username": "Input Username",
 	"password": "Input Password",
-	"fiji_path": "path to fiji with metroloJ installed. If on windows requires \\ e.g. C:\\Users\\Test\\Fiji"
+	"fiji_path": "path to fiji with metroloJ installed. If on windows requires \\ e.g. C:\\Users\\Test\\Fiji",
+	"group": 1234
 }
