@@ -76,7 +76,7 @@ def initialize_MetroloJDialog(method,
 	except KeyError:
 		raise KeyError("Microscope type not found in image key value pairs. " \
 		"Please ensure that the image has a key 'microscope_type' with value 'WideField', 'CLSM', 'Spinning Disc Confocal' or 'Multiphoton'")
-	if microscope_index == 1:  # CLSM
+	if microscope_index == 1 and method != "drift":  # 1 = CLSM. Drift not dependent on pinhole size.
 		try:
 			pinhole_size = float(image.key_value_pairs["pinhole_size_AU"])
 		except KeyError:
