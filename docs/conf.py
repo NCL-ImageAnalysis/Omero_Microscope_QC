@@ -33,8 +33,18 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
-    "sphinx_automodapi.automodapi"
+    "sphinx_automodapi.automodapi",
+    "myst_parser",
 ]
+
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
+
+# README sections are included into the docs; their headings start at ### under
+# each page title, so allow the jump in heading level.
+suppress_warnings = ["myst.header"]
 
 autosummary_generate = True
 
