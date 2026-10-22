@@ -353,7 +353,8 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 			print_and_log(f"Failed to process image {image.name} (ID: {image.id}). Error: {str(e)}", log_level=logging.ERROR)
 			logging.error(traceback.format_exc())
 			# Searchable key value pair to find errors
-			image.add_key_values(conn, {"QC_Error": "True"}, namespace="qc.error")
+			if not omero_objects.Bool_or_Missing(image.key_value_pairs, "QC_Error"):
+				image.add_key_values(conn, {"QC_Error": "True"}, namespace="qc.error")
 			# Writes the error message and traceback to a log file in the output directory, attaches it to the image, and then removes the log file from the local system.
 			error_log_path = pathlib.Path(output_directory) / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{image.name}_error_log.txt"
 			with open(error_log_path, "w") as error_log:
