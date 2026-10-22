@@ -1,4 +1,4 @@
-[![Documentation Status](https://readthedocs.org/projects/omero-microscope-qc/badge/?version=latest)](https://omero-microscope-qc.readthedocs.io/en/latest/)
+[![Documentation Status](https://img.shields.io/readthedocs/omero-microscope-qc/latest)](https://omero-microscope-qc.readthedocs.io/en/latest/)
 
 # Omero Microscope QC
 
