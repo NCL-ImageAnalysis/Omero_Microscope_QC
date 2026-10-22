@@ -35,6 +35,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_automodapi.automodapi",
     "myst_parser",
+    "sphinx_click",
 ]
 
 source_suffix = {
@@ -60,6 +61,7 @@ autodoc_default_options = {
 autoclass_content = "both"
 
 # Read the API surface during docs builds without requiring the full runtime stack.
+# click is deliberately not mocked as sphinx_click needs the real command objects.
 autodoc_mock_imports = [
     "Ice",
     "imagej",
@@ -67,7 +69,6 @@ autodoc_mock_imports = [
     "omero",
     "numpy",
     "xarray",
-    "click",
     "pandas",
     "networkx",
     "NanoImagingPack"

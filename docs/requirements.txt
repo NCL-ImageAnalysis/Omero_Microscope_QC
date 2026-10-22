@@ -64,3 +64,5 @@ PySide6
 drawsvg
 sphinx_automodapi
 myst-parser==3.0.1
+sphinx-click
+click

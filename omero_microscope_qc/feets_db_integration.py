@@ -70,6 +70,14 @@ def process_image(image, output_directory, id_mapping):
 @click.option("--log_files", default=None, type=click.Path(dir_okay=True, file_okay=True, writable=True, resolve_path=True), help="Path to a log file to write logs to. If a directory is provided, a new log file will be created in that directory with a timestamp. If not provided, logs will be printed to the console. Default is None.")
 
 def main(output_directory, config_path, log_level, log_files):
+	"""Download processed QC results from OMERO into a FEETS database directory.
+
+	Finds images that have been QC processed but not yet imported into feets-db, and downloads
+	their results files into OUTPUT_DIRECTORY, sorted into folders by microscope, QC type
+	and acquisition date. OUTPUT_DIRECTORY must contain one folder per microscope, named
+	starting with the microscope ID followed by an underscore. Successfully downloaded
+	images are marked in OMERO with the key value pair 'Feets_Imported: True'.
+	"""
 	handlers = []
 	if log_files:
 		if os.path.isdir(log_files):

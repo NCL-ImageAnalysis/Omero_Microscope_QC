@@ -223,7 +223,13 @@ def main(output_directory, config_path, coreg_name, psf_name, drift_name,
 		 z_accuracy_name, detector_metrics_name, thresholding_method, 
 		 center_dectection_method, save_pdf, save_csv, save_images, 
 		 clear_local_output, memory, log_level, log_files, verbose):
-	
+	"""Batch process microscope QC images stored in OMERO.
+
+	Searches OMERO for unprocessed images in datasets matching the given dataset names,
+	runs MetroloJ, z accuracy or detector analysis on each one and attaches the results
+	back to the image in OMERO. Local output files are saved to OUTPUT_DIRECTORY.
+	"""
+
 	handlers = []
 	if verbose:
 		handlers.append(logging.StreamHandler())

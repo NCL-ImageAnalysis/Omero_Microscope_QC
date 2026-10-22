@@ -1,3 +1,5 @@
 Sphinx>=6,<8
 sphinx_rtd_theme
 myst-parser
+sphinx-click
+click
