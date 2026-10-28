@@ -55,6 +55,12 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 	project_name = image.parent.parent.name
 	dataset_name = image.parent.name
 	image_output_directory = pathlib.Path(output_directory) / project_name / dataset_name / image.name
+	
+	if os.path.exists(image_output_directory):
+		logging.debug(f"Output directory {image_output_directory} already exists. Deleting existing contents.")
+		# Clear the output directory
+		shutil.rmtree(image_output_directory)
+
 	logging.debug(f"Output directory for image {image.name} (ID: {image.id}): {image_output_directory}")
 	image_output_directory.mkdir(parents=True, exist_ok=True)
 	# Need a separator at the end of the output directory string for metroloJ
