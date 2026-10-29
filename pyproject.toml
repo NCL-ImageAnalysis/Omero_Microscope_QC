@@ -45,4 +45,5 @@ packages = ["omero_microscope_qc"]
 [tool.setuptools_scm]
 [project.urls]
 Homepage = "https://github.com/NCL-ImageAnalysis/Omero_Microscope_QC"
+Documentation = "https://omero-microscope-qc.readthedocs.io/en/latest/index.html"
 Issues = "https://github.com/NCL-ImageAnalysis/Omero_Microscope_QC/issues"
