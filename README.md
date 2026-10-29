@@ -103,7 +103,7 @@ The script can then be run with:
 python -m omero_microscope_qc [temporary_output_path] --config_path [omero_config_path]
 ```
 
-Additional arguments can be listed with:
+Additional arguments can be found [here](https://omero-microscope-qc.readthedocs.io/en/latest/api.html#command-line-interface) or listed with:
 
 ```
 python -m omero_microscope_qc --help
