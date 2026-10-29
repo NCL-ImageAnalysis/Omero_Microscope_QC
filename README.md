@@ -89,8 +89,8 @@ PSF and Registration methods support automatic cropping of multiple beads in a s
 
 A full list of key value pairs and their functions can be found in [Key Value Pairs](docs/key_value_pairs.rst). 
 
-### Running the script
-Running the script requires an omero config file, the template of which is called [.omero_config](https://github.com/NCL-ImageAnalysis/omero_microscope_qc/blob/main/.omero_config).
+### Running the analysis script
+Running the analysis script requires an omero config file, the template of which is called [.omero_config](https://github.com/NCL-ImageAnalysis/omero_microscope_qc/blob/main/.omero_config).
 This requires the hostname of the OMERO server you are connecting to along with a username and password for this server.
 You also need to provide a path to the top level folder where your version of fiji with MetroloJ_QC is installed.
 If this is a windows path, you must use double slashes to avoid it being interpreted as an escape character.
@@ -107,5 +107,14 @@ Additional arguments can be found [here](https://omero-microscope-qc.readthedocs
 
 ```
 python -m omero_microscope_qc --help
+```
+
+### feets_db integration
+This package also includes a script which will download analysis outputs in the structure that [feets_db](https://github.com/FeetsQCDB) requires. 
+
+This is run with:
+
+```
+feets-db-integration [output_directory] --config_path [omero_config_path]
 ```
 <!-- end-usage -->
