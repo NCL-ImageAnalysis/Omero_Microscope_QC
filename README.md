@@ -83,7 +83,7 @@ Aquisition date will typically be taken from omero metadata, however this is not
 Additional settings for analysis can be attached as key value pairs at any level of this structure, with bottom-most matching key taking precedence.
 Any class attributes of the MetroloJDialog class that can be cast from text can be added as key value pairs and they will be automatically applied to the analysis.
 
-The [`microscope_type`](https://omero-microscope-qc.readthedocs.io/en/latest/key_value_pairs.html#microscope-type) key value is needed for all methods. For confocal laser scanning microscopes, [`pinhole_size_AU`](https://omero-microscope-qc.readthedocs.io/en/latest/key_value_pairs.html#pinhole-size-AU) is required for PSF and Registration methods.
+The [`microscope_type`](https://omero-microscope-qc.readthedocs.io/en/latest/key_value_pairs.html#microscope-type) key value is needed for all methods. For confocal laser scanning microscopes, [`pinhole_size_AU`](https://omero-microscope-qc.readthedocs.io/en/latest/key_value_pairs.html#pinhole-size-au) is required for PSF and Registration methods.
 
 PSF and Registration methods support automatic cropping of multiple beads in a single image field. To use this it requires the [`use_rois`](https://omero-microscope-qc.readthedocs.io/en/latest/key_value_pairs.html#use-rois), [`generate_rois`](https://omero-microscope-qc.readthedocs.io/en/latest/key_value_pairs.html#generate-rois) and [`crop_size`](https://omero-microscope-qc.readthedocs.io/en/latest/key_value_pairs.html#crop-size) key value pairs. This can be useful even in large fields with a single bead, as it speeds up downstream processing.
 
