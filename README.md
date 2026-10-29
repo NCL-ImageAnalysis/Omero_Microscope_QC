@@ -79,6 +79,7 @@ It expects a structure of:
         └── Dataset - Analysis method
             └── Individual images
 ```
+The group can either be the default group for the user account included in the .omero_config file, or explicitly specified in the config file by group ID.
 Aquisition date will typically be taken from omero metadata, however this is not parsed properly for all microscope manufacturers so it is recommended to include the aquisition date in the image name in the format "YYYY-MM-DD_Imagename.ext".
 Additional settings for analysis can be attached as key value pairs at any level of this structure, with bottom-most matching key taking precedence.
 Any class attributes of the MetroloJDialog class that can be cast from text can be added as key value pairs and they will be automatically applied to the analysis.
