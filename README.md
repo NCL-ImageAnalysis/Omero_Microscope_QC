@@ -46,19 +46,12 @@ pip install https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/
 
 Further details can be found on omero-py's GitHub: <https://github.com/ome/omero-py>
 
-When that is installed you can then install omero-microscope-qc and all remaining requirements.
-
-If you have git installed this can be done with:
+When that is installed you can then install omero-microscope-qc and all remaining requirements with:
 
 ```
-pip install git+https://github.com/NCL-ImageAnalysis/Omero_Microscope_QC.git
+pip install omero-microscope-qc[all]
 ```
-
-Otherwise you can download the repository, navigate to where the folder is extracted and install with
-
-```
-pip install .
-```
+It is possible to install without pyImageJ or NanoImagingPack in order to just use the omero helper functions. pyimagej is only a requirement if you add `.[imagej]` or `.[nanoimagingpack]` for NanoImagingPack (using `.[all]` to install all optional dependencies)
 
 ### Fiji/MetroloJ_QC installation
 omero-microscope-qc requires a working Fiji installation with MetroloJ_QC installed into Fiji's plugin folder.
@@ -71,14 +64,6 @@ Full installation instructions for MetroloJ_QC can be found in its [manual](http
 
 Currently this has been tested on MetroloJ_QC v1.3.1.2
 
-### Installation without pyImageJ/MetroloJ/NanoImagingPack
-It is possible to install without pyImageJ or NanoImagingPack in order to just use the omero helper functions. pyimagej is only a requirement if you add `.[imagej]` to your pip install command, e.g.
-
-```
-pip install .[imagej]
-```
-
-The same is true for NanoImagingPack, which is only required if you add `.[nanoimagingpack]` to your pip install command, and you can use `.[all]` to install all optional dependencies.
 <!-- end-installation -->
 
 ## Usage
