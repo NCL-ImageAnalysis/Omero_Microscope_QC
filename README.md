@@ -38,7 +38,13 @@ mamba create -n omero-microscope-qc-env python=3.12 pyimagej openjdk=11
 
 This will create your environments and install pyImageJ and java requirements. For any issues at this stage see pyImageJ's documentation here: <https://py.imagej.net/en/latest/index.html>
 
-To install omero-py you will need to first install ZeroC IcePy 3.6 python bindings. Details for how to do this can be found on omero-py's GitHub: <https://github.com/ome/omero-py>
+To install omero-py you will need to first install [ZeroC IcePy 3.6 python bindings](https://www.glencoesoftware.com/blog/2023/12/08/ice-binaries-for-omero.html). Identify matching binary for your operating system/python version, copy the link and install via pip e.g.
+
+```
+pip install https://github.com/glencoesoftware/zeroc-ice-py-win-x86_64/releases/download/20261009/zeroc_ice-3.6.5-cp312-cp312-win_amd64.whl
+```
+
+Further details can be found on omero-py's GitHub: <https://github.com/ome/omero-py>
 
 When that is installed you can then install omero-microscope-qc and all remaining requirements.
 
