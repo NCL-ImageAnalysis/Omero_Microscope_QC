@@ -36,9 +36,9 @@ Create your environment with:
 mamba create -n omero-microscope-qc-env python=3.12 pyimagej openjdk=11
 ```
 
-This will create your environments and install pyImageJ and java requirements. For any issues at this stage see pyImageJ's documentation here: https://py.imagej.net/en/latest/index.html
+This will create your environments and install pyImageJ and java requirements. For any issues at this stage see pyImageJ's documentation here: <https://py.imagej.net/en/latest/index.html>
 
-To install omero-py you will need to first install ZeroC IcePy 3.6 python bindings. Details for how to do this can be found on omero-py's GitHub: https://github.com/ome/omero-py
+To install omero-py you will need to first install ZeroC IcePy 3.6 python bindings. Details for how to do this can be found on omero-py's GitHub: <https://github.com/ome/omero-py>
 
 When that is installed you can then install omero-microscope-qc and all remaining requirements.
 
@@ -57,7 +57,7 @@ pip install .
 ### Fiji/MetroloJ_QC installation
 omero-microscope-qc requires a working Fiji installation with MetroloJ_QC installed into Fiji's plugin folder.
 
-You can download Fiji from: https://fiji.sc/ and the MetroloJ_QC jar file from its GitHub repository here: https://github.com/MontpellierRessourcesImagerie/MetroloJ_QC
+You can download Fiji from: https://fiji.sc/ and the MetroloJ_QC jar file from its GitHub repository here: <https://github.com/MontpellierRessourcesImagerie/MetroloJ_QC>
 
 After Fiji has been unzipped from its archive download the MetroloJ_QC jar file to its plugin folder.
 
