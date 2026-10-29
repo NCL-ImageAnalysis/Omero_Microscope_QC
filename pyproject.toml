@@ -44,5 +44,5 @@ feets-db-integration = "omero_microscope_qc.feets_db_integration:main"
 packages = ["omero_microscope_qc"]
 [tool.setuptools_scm]
 [project.urls]
-Homepage = "https://github.com/NCL-ImageAnalysis/Batch_QC"
-Issues = "https://github.com/NCL-ImageAnalysis/Batch_QC/issues"
+Homepage = "https://github.com/NCL-ImageAnalysis/Omero_Microscope_QC"
+Issues = "https://github.com/NCL-ImageAnalysis/Omero_Microscope_QC/issues"
