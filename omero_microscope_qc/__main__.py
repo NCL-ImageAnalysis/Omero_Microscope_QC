@@ -2,7 +2,7 @@ import json
 import sys
 import os
 import omero_microscope_qc
-from omero_microscope_qc import metroloJ_access, omero_objects, z_accuracy, detector
+from omero_microscope_qc import metroloJ_access, omero_objects, z_accuracy, detector, microscopy_metrics_access
 import click
 import pathlib
 import shutil
@@ -10,6 +10,8 @@ import Ice
 import logging
 import traceback
 from datetime import datetime
+
+
 
 def print_and_log(message, log_level=logging.INFO):
 	"""Prints a message to the console and logs it at the specified log level.
@@ -115,7 +117,7 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 				# No suffix needed if processing whole image
 				save_suffix = ""
 			# Processing with metroloJ
-			if method in ["registration", "psf", "drift"]:
+			if method in ["registration", "drift"]:
 				print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
 				print_and_log("Loading image data and initialising metroloJ dialog...")
 				# Builds the dialog
@@ -130,6 +132,11 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 				print_and_log("Running metroloJ analysis...")
 				# Runs the actual analysis
 				ex_instance = metroloJ_access.execute_MetroloJ_process(Dialog, image_output_directory_str, save_suffix, image.acquisition_date)
+			# Processing with microscopy metrics
+			elif method == "psf":
+				print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using {method} method.")
+				print_and_log("Loading image data and running microscopy metrics...")
+				microscopy_metrics_access.run_MM(image, image_output_directory_str, thresholding_method, center_dectection_method)
 			# Processing with custom z accuracy script
 			elif method == "z_accuracy":
 				print_and_log(f"Processing image {image.name} (ID: {image.id}) from microscope {project_name} using z_accuracy method.")
@@ -141,7 +148,7 @@ def run_analysis(image, output_directory, method, thresholding_method="Otsu", ce
 			else:
 				raise ValueError(f"Unknown method '{method}'. Method must be one of 'registration', 'psf', 'drift' or 'z_accuracy'.")
 			success = True
-			omero_microscope_qc._java["WindowManager"].closeAllWindows()
+			#omero_microscope_qc._java["WindowManager"].closeAllWindows()
 		except Exception as e:
 			if roi is not None:
 				print_and_log(f"Failed to process ROI {roi.id} for image {image.name} (ID: {image.id}) from microscope {project_name}. Error: {str(e)}", log_level=logging.ERROR)
@@ -215,7 +222,7 @@ def reconnect_and_reload(image_list, connection_parameters, current_connection=N
 @click.option("--z_accuracy_name", default="Z-drive", help="Name of datasets containing Z accuracy images to look for in OMERO. Default is 'Z-drive'.")
 @click.option("--detector_metrics_name", default="Detector", help="Name of datasets containing Z accuracy images to look for in OMERO. Default is 'Detector'.")
 @click.option("--thresholding_method", default="Otsu", type=click.Choice(["Legacy", "Li", "Minimum", "Otsu"]), help="Thresholding method to use for bead detection in MetroloJ. Default is 'Otsu'.")
-@click.option("--center_dectection_method", default="centroid", type=click.Choice(["ellipses", "centroid", "max"]), help="Method to use for center detection in MetroloJ. Default is 'centroid'.")
+@click.option("--center_dectection_method", default="centroid", type=click.Choice(["ellipses", "centroid", "max", "Laplacian of Gaussian", "Difference of Gaussian"]), help="Method to use for center detection in MetroloJ/Microscopy Metrics. Default is 'centroid'.")
 @click.option("--save_pdf/--no_save_pdf", default=True, help="Whether to save the MetroloJ report as a PDF and attach to OMERO. Default is save_pdf.")
 @click.option("--save_csv/--no_save_csv", default=True, help="Whether to save the MetroloJ results as a CSV and attach to OMERO. Default is save_csv.")
 @click.option("--save_images/--no_save_images", default=True, help="Whether to save the MetroloJ output images and attach to OMERO. Default is save_images.")
