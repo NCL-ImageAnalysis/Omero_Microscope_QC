@@ -33,9 +33,13 @@ imagej = [
 nanoimagingpack = [
   "NanoImagingPack>=2.1.5"
 ]
+microscopy_metrics = [
+	"microscopy_metrics"
+]
 all = [
   "pyimagej",
   "NanoImagingPack>=2.1.5"
+  "microscopy-metrics"
 ]
 [project.scripts]
 feets-db-integration = "omero_microscope_qc.feets_db_integration:main"
